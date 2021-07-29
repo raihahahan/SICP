@@ -11,7 +11,7 @@ Each exercise aims to include:
 * Code documentation (eg. comments explaining the required arguments and expected return values)
 * Tests and output
 
-Granted, each of these solutions are not fully polished as this is only for my own progress tracking. For clearer answers, do visit the last two links I've provided under the Acknowledgement header.
+Of course, each of these solutions are not fully polished as this is only for my own progress tracking. For clearer answers, do visit the last two links I've provided under the Acknowledgement header.
 
 ## Getting Started
 
