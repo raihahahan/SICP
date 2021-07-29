@@ -15,7 +15,7 @@ Of course, each of these solutions are not fully polished as this is only for my
 
 ## Getting Started
 
-* MIT/GNU Scheme is what I use to compile my code.
+MIT/GNU Scheme is what I use to compile my code.
 
 ### Installing
 
