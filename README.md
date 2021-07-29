@@ -21,7 +21,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 ## Acknowledgments
 
-The links below have been instrumental in my progress of reading through the book.
+The links below have been instrumental in my progress in reading through the book.
 
 * [Original MIT Lectures](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-001-structure-and-interpretation-of-computer-programs-spring-2005/video-lectures/)
 * [Codology](https://codology.net/)
