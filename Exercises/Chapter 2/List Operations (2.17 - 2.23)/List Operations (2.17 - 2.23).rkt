@@ -200,3 +200,17 @@
 
 (define 1-to-3 (list 1 2 3))
 
+;; Exercise 2.23
+
+(define (for-each-1 p l)
+  ;; takes as arguments procedure p and list l
+  (cond ((null? l) #t)
+        (else
+         (p (car l))
+         (newline)
+         (for-each-1 p (cdr l)))))
+
+(for-each-1 (lambda (x) (display (square x))) (list 1 2 3 4))
+
+
+
