@@ -19,7 +19,7 @@ MIT/GNU Scheme is what I use to compile my code.
 
 ### Installing
 
-* Download MIT/GNU Scheme https://www.gnu.org/software/mit-scheme/.
+* To run any of the files, download MIT/GNU Scheme https://www.gnu.org/software/mit-scheme/.
 
 
 ## License
