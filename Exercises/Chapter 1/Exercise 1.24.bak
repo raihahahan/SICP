@@ -1,0 +1,84 @@
+#lang racket/base
+(define (even? x)
+  ;; takes an argument number x
+  ;; checks if number is even
+  (= (remainder x 2) 0))
+
+(define (square x)
+  ;; takes an argument number x
+  ;; returns the square of x
+  (* x x))
+
+(define (expt base n)
+  ;; takes as arguments base and n (types: number)
+  ;; returns b^n
+  (cond ((= n 0) 1)
+        ((even? n) (expt (square base) (/ n 2)))
+        (else (* base (expt base (- n 1))))))
+
+
+;; exercise 1.24
+
+;; 1. define procedure for a^n mod n
+(define (expmod base exp m)
+  (cond ((= exp 0) 1) ;;1 mod n = 1
+        ((even? exp) ;; if exp is even
+         (remainder (square (expmod base (/ exp 2) m)) m)) ;; fast expt method for even exponent. returns remainder i.e (a^(n/2))^2modn
+         (else
+          (remainder (* base (expmod base (- exp 1) m)) m)))) ;; fast expt method for odd exponent. returns remainder i.e (a(a^(n-1)))modn
+
+;; 2. define procedure for fermat's test. choose random number 1 <= a <= n-1 and check whether a^nmodn = a
+(define (fermat-test n) ;; procedure which does fermat's test with random 1 <= a <= n-1
+  (define (try-it a) ;; procedure which returns true if a^nmodn = a, which checks if n is prime.
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+;; 3. define procedure that runs the test given number of times, as specified by parameter.
+(define (fast-prime? n times)
+  (cond ((= times 0) #t) ;; if test runs 0 times, then n is prime
+        ((fermat-test n) (fast-prime? n (- times 1))) ;; does fermat test, if true, then runs fast-prime test again until n times. if all n times, fermat test returns true, then we have confidence that n is most probably prime.
+        (else #f)))
+
+(define (fast-timed-prime-test n)
+  (newline)
+  (fast-start-prime-test n (runtime)))
+
+(define (fast-start-prime-test n start-time)
+  (if (fast-prime? n 20)
+      (report-prime (- (runtime) start-time))
+      (display "")
+      ))
+
+(define (fast-search-iter lower upper count counter)
+  (cond ((= counter 3) (display ""))
+        ((even? count)
+         (fast-search-iter lower upper (+ count 1) counter))
+        ((fast-prime? count 20)
+         (newline)
+         (display count)
+         (fast-timed-prime-test count)
+         (fast-search-iter lower upper (+ count 1) (+ counter 1)))
+        (else
+         (fast-search-iter lower upper (+ count 1) counter))))
+
+
+(define (fast-search-for-primes lower upper)
+  (fast-search-iter lower upper lower 0))
+
+;(fast-search-for-primes 1001 10000)
+;(newline)
+;(fast-search-for-primes 10001 100000)
+;(newline)
+;(fast-search-for-primes 100001 1000000)
+;(newline)
+;(fast-search-for-primes 1000001 10000000)
+;(newline)
+
+
+
+(define (my-fermat-test n)
+  (define (my-fermat-test-iter a n)
+    (cond ((= a 1) #t)
+          ((= (expmod a n n) a) (my-fermat-test-iter (- a 1) n))
+          (else #f)))
+  (my-fermat-test-iter (- n 1) n))
