@@ -8,28 +8,11 @@ This is entirely for me to track my own progress. As I am only self-learning thi
 
 ## Getting Started
 
-* Download MIT/GNU Scheme https://www.gnu.org/software/mit-scheme/
-
+* MIT/GNU Scheme is what I use to compile my code.
 
 ### Installing
 
-* How/where to download your program
-* Any modifications needed to be made to files/folders
-
-
-## Help
-
-Any advise for common problems or issues.
-```
-command to run if program contains helper info
-```
-
-## Authors
-
-Contributors names and contact info
-
-ex. Dominique Pizzie  
-ex. [@DomPizzie](https://twitter.com/dompizzie)
+* Download MIT/GNU Scheme https://www.gnu.org/software/mit-scheme/.
 
 
 ## License
@@ -38,5 +21,8 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 ## Acknowledgments
 
+The websites below have been instrumental in my progress of reading through the book.
+
+* [Original MIT Lectures] https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-001-structure-and-interpretation-of-computer-programs-spring-2005/video-lectures/
 * [codology](https://codology.net/)
 * [community scheme wiki](http://community.schemewiki.org/?SICP-Solutions)
