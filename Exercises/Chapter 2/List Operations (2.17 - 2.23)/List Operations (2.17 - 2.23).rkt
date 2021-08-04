@@ -148,7 +148,7 @@
   ;; takes as argument procedure p and list l
   ;; returns a list with elements that fulfil a true condition when passed into p as an argument
   (cond ((null? l) '())
-        ((p (car l))(cons (car l) (filter p (cdr l))))
+        ((p (car l)) (cons (car l) (filter p (cdr l))))
         (else (filter p (cdr l)))))
 
 (define (same-parity? x y)
