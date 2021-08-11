@@ -1,6 +1,8 @@
 #lang racket/base
-;; Nested Mappings
 (define nil '())
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
 
 (define (filter predicate sequence)
   (cond ((null? sequence) '())
@@ -30,12 +32,25 @@
 (define (map p sequence)
   (accumulate (lambda (x y) (cons (p x) y)) '() sequence))
 
-;(accumulate append
- ;           nil
-  ;          (map (lambda (i) ;; for each element i in 1 to n,
-   ;               (map (lambda (j) (list i j)) ;; for each element j in 1 to i - 1, 
-    ;                   (enumerate-interval 1 (- i 1)))) ;; list i to j
-     ;       (enumerate-interval 1 n))) ;; make list of interval from 1 to n
+
+;; Exercise 2.40
+
+;Define a procedure unique-pairs that, given an integer n, generates the sequence of pairs (i,j) with 1<= j< i<= n. Use unique-pairs to simplify the definition of prime-sum-pairs given above.
+
+; Workings:
+; 1. Enumerate interval 1 to n inclusive
+; 2. For each i in n, map
+; 3. For each j in i, j<i, map (i, j)
+
+(define (unique-pairs n)
+  (flatmap
+   (lambda (i)
+     (map (lambda (j)
+            (list i j))
+            (enumerate-interval 1 (- i 1))))
+   (enumerate-interval 2 n)))
+
+;; for this list of pairs, we want to filter out pairs where the sum is not prime
 
 (define (square x)
   (* x x))
@@ -53,36 +68,75 @@
         ((= (smallest-divisor n) n) #t)
         (else #f)))
 
-; 1. Generate the sequence of all ordered pairs of positive integers less than or equal to n (i, j)
-; 2. Filter to select those pairs whose sum is prime
-; 3. For each pair (i, j) that passes through the filter, produce the triple (i, j, i+j)
-
-;;; 1. GENERATE SEQUENCE OF ORDERED PAIRS
-; a. For each i <= n, enumerate integers 1 <= i <= n
-; b. For each j < i, enumerate integers j < i
-; c. For each i, map i to for each j, map j to list (i, j)
-; d. Now, we have a list of list of pairs for each j
-; e. To combine the list of list of pairs into a list of pairs, accumulate with append
-
-(define (flatmap proc seq)
-  (accumulate append nil (map proc seq)))
-
-
-;;; 2. FILTER SEQUENCE OF PAIRS TO FIND WHICH SUM IS PRIME
 (define (prime-sum? pair)
   (prime? (+ (car pair) (cadr pair))))
 
-;;; 3. GENERATE SEQUENCE OF FILTERS
 (define (make-pair-sum pair)
   (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
 
-;;; FINAL
-(define (prime-sum-pairs n)
-  (map make-pair-sum
-       (filter prime-sum?
-               (flatmap
-                (lambda (i)
-                  (map (lambda (j) (list i j))
-                       (enumerate-interval 1 (- i 1))))
-                (enumerate-interval 1 n)))))
-                
+;; FINAL
+
+(define (prime-sum n)
+  (map
+   make-pair-sum
+   (filter
+   prime-sum?
+   (unique-pairs n))))
+
+;; Test
+(prime-sum 10)
+(display "***")
+(newline)
+(prime-sum 3)
+(display "***")
+(newline)
+(prime-sum 12)
+
+;; Output
+;'((2 1 3)
+;  (3 2 5)
+;  (4 1 5)
+;  (4 3 7)
+;  (5 2 7)
+;  (6 1 7)
+;  (6 5 11)
+;  (7 4 11)
+;  (7 6 13)
+;  (8 3 11)
+;  (8 5 13)
+;  (9 2 11)
+;  (9 4 13)
+;  (9 8 17)
+;  (10 1 11)
+;  (10 3 13)
+;  (10 7 17)
+;  (10 9 19))
+;***
+;'((2 1 3) (3 2 5))
+;***
+;'((2 1 3)
+;  (3 2 5)
+;  (4 1 5)
+;  (4 3 7)
+;  (5 2 7)
+;  (6 1 7)
+;  (6 5 11)
+;  (7 4 11)
+;  (7 6 13)
+;  (8 3 11)
+;  (8 5 13)
+;  (9 2 11)
+;  (9 4 13)
+;  (9 8 17)
+;  (10 1 11)
+;  (10 3 13)
+;  (10 7 17)
+;  (10 9 19)
+;  (11 2 13)
+;  (11 6 17)
+;  (11 8 19)
+;  (12 1 13)
+;  (12 5 17)
+;  (12 7 19)
+;  (12 11 23))
+;> 
