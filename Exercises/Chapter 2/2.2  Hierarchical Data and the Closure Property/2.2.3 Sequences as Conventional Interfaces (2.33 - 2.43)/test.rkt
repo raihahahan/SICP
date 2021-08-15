@@ -38,8 +38,6 @@
     (append rest-of-queens (list (list row-pos k)))))
 
 (define test (list '(1 2) '(3 4) '(5 7)))
-(adjoin-position (list 6 7) 10 test)
-(max 2 3)
 
 (define (pair-compare pair1 pair2)
   ;; takes 2 lists as args
@@ -71,15 +69,14 @@
 ;(pair-compare (list 1 2) (list 1 2))
   
 
-(define (safe? k positions)
-  (define truth-val (accumulate
-   +
-   0
-   (map
-   (lambda (pos)
+
+(define (get-all-unsafe-positions k positions)
+ (flatmap
+    (lambda (pos)
      (let ((row-pos (car pos))
            (col-pos (cadr pos)))
        
+       ;; generate unsafe row, col, diagonal to the POSITIVE direction of chess piece
        (define (generate-rows k)
          (map
           (lambda (new-row)
@@ -90,33 +87,73 @@
          (map
           (lambda (new-col)
             (list row-pos new-col))
-          (enumerate-interval (+ col-pos 1) k)))       
+          (enumerate-interval (+ col-pos 1) k)))
+       
        (define (generate-diagonals k)
          (map
           (lambda (new-pos)
             (list (+ row-pos new-pos) (+ col-pos new-pos)))
              (enumerate-interval 1 (min (- k row-pos) (- k col-pos)))))
+
+       ;; generate unsafe row, col, diagonal to the NEGATIVE direction of chess piece
+       (define (generate-rows_neg k)
+         (map
+          (lambda (new-row)
+            (list new-row col-pos))
+          (enumerate-interval 1 (- row-pos 1))))
        
-       (define (generate-unsafe-seq rows cols diags)
-         (append rows cols diags))
+       (define (generate-columns_neg k)
+         (map
+          (lambda (new-col)
+            (list row-pos new-col))
+          (enumerate-interval 1 (- col-pos 1))))
+       
+       (define (generate-diagonals_neg k)
+         (map
+          (lambda (new-pos)
+            (list (- row-pos new-pos) (- col-pos new-pos)))
+             (enumerate-interval 1 (min (- row-pos 1) (- col-pos 1)))))
+
+       ;; generate unsafe diagonal to north-west direction of chess piece
+       (define (generate-diag-NW k)
+         (map
+          (lambda (new-pos)
+            (list (- row-pos new-pos) (+ col-pos new-pos)))
+            (enumerate-interval 1 (min (- row-pos 1) (- k col-pos)))))
+
+       (define (generate-diag-NW_neg k)
+         (map
+          (lambda (new-pos)
+            (list (+ row-pos new-pos) (- col-pos new-pos)))
+            (enumerate-interval 1 (min (- k row-pos) (- col-pos 1)))))
+
+       ;; Generate all the unsafe positions into a list
+       (define (generate-unsafe-seq rows cols diags rows_neg cols_neg diags_neg diags-NW diags-NW_neg)
+         (append rows cols diags rows_neg cols_neg diags_neg diags-NW diags-NW_neg))
+       
        (define unsafe-seq (generate-unsafe-seq
                            (generate-rows k)
                            (generate-columns k)
                            (generate-diagonals k)
+                           (generate-rows_neg k)
+                           (generate-columns_neg k)
+                           (generate-diagonals_neg k)
+                           (generate-diag-NW k)
+                           (generate-diag-NW_neg k)
                            ))
-       ;;unsafe-seq))
-       (if (includes unsafe-seq positions)
-           1
-           0
-           )))
-   positions)))
-  (= truth-val 0))
-  
-      
-      
+       unsafe-seq
+     )  
+      )
+   positions)
+     )
 
+(define (safe? k positions)
+  (not (includes (get-all-unsafe-positions k positions) positions)))
+ 
 ;;{[(),(),(),()], [(),(),(),()]}
 
-(define my-pos (list '(4 1) '(2 2) '(8 3) '(5 4) '(7 5) '(1 6) '(3 7) '(6 8)))
-(safe? 8 my-pos)
+;;(define my-pos (list '(4 1) '(2 2) '(8 3) '(5 4) '(7 5) '(1 6) '(3 7) '(6 8)))
+(define my-pos '((2 1) (4 2) (3 3) (1 4)))
+(get-all-unsafe-positions 4 my-pos)
+(safe? 4 my-pos)
  
