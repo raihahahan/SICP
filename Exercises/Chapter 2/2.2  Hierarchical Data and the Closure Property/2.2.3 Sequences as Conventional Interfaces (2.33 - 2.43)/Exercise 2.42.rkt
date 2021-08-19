@@ -184,7 +184,7 @@
 
 ;; TEST
 
-(queens 6)
+(queens 9)
 
 ;; OUTPUT
 ;; n=1
