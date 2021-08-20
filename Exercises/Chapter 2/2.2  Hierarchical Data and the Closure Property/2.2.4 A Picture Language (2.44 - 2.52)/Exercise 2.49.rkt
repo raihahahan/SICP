@@ -255,7 +255,7 @@
    (let ((origin (origin-frame frame))
         (edge1 (edge1-frame frame))
         (edge2 (edge2-frame frame)))
-     ;; 16 segments total: arbitrarily guess the coords
+     ;; 21 segments total: arbitrarily guess the coords
      ;; plotted coordinated using Desmos
      ; 1. (0, 0.5), (0.125, 0.5)
      ; 2. (0.125,0.5), (0.25, 0.65)
