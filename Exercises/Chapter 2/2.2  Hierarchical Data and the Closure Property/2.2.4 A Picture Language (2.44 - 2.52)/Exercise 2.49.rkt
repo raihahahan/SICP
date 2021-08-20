@@ -251,6 +251,60 @@
                                       s4)) frame))))))
 
 ; d. The wave painter.
+(define (wave-painter frame)
+   (let ((origin (origin-frame frame))
+        (edge1 (edge1-frame frame))
+        (edge2 (edge2-frame frame)))
+     ;; 16 segments total: arbitrarily guess the coords
+     ;; plotted coordinated using Desmos
+     ; 1. (0, 0.5), (0.125, 0.5)
+     ; 2. (0.125,0.5), (0.25, 0.65)
+     ; 3. (0.25, 0.65), (0.325, 0.6)
+     ; 4. (0.325, 0.6), (0.25, 0)
+     ; 5. (0.25, 0), (0.35, 0)
+     ; 6. (0.35, 0), (0.5, 0.2)
+     ; 7. (0.5, 0.2), (0.65, 0)
+     ; 8. (0.65, 0), (0.75, 0)
+     ; 9. (0.75, 0), (0.65, 0.55)
+     ; 10. (0.65, 0.55), (1, 0.15)
+     ; 11. (1, 0.15), (1, 0.4)
+     ; 12. (1, 0.4), (0.8, 0.75)
+     ; 13. (0.8, 0.75), (0.65, 0.75)
+     ; 14. (0.65, 0.75), (0.725, 0.9)
+     ; 15. (0.725, 0.9), (0.65, 1)
+     ; 16. (0.65, 1), (0.4, 1)
+     ; 17. (0.4, 1), (0.325, 0.9)
+     ; 18. (0.325, 0.9), (0.4, 0.75)
+     ; 19. (0.4, 0.75), (0.25, 0.75)
+     ; 20. (0.25, 0.75), (0.125, 0.7)
+     ; 21. (0.125, 0.7), (0, 0.9)
+     (let ((s1 (make-vect 0 0.5) (make-vect 0.125 0.5))
+           (s2 (make-vect 0.125 0.5) (make-vect 0.25 0.65))
+           (s3 (make-vect 0.25 0.65) (make-vect 0.325 0.6))
+           (s4 (make-vect 0.325 0.6) (make-vect 0.25 0))
+           (s5 (make-vect 0.25 0) (make-vect 0.35 0))
+           (s6 (make-vect 0.35 0) (make-vect 0.5 0.2))
+           (s7 (make-vect 0.5 0.2) (make-vect 0.65 0))
+           (s8 (make-vect 0.65 0) (make-vect 0.75 0))
+           (s9 (make-vect 0.75 0) (make-vect 0.65 0.55))
+           (s10 (make-vect 0.65 0.55) (make-vect 1 0.15))
+           (s11 (make-vect 1 0.15) (make-vect 1 0.4))
+           (s12 (make-vect 1 0.4) (make-vect 0.8 0.75))
+           (s13 (make-vect 0.8 0.75) (make-vect 0.65 0.75))
+           (s14 (make-vect 0.65 0.75) (make-vect 0.725 0.9))
+           (s15 (make-vect 0.725 0.9) (make-vect 0.65 1))
+           (s16 (make-vect 0.65 1) (make-vect 0.4 1))
+           (s17 (make-vect 0.4 1) (make-vect 0.325 0.9))
+           (s18 (make-vect 0.325 0.9) (make-vect 0.4 0.75))
+           (s19 (make-vect 0.4 0.75) (make-vect 0.25 0.75))
+           (s20 (make-vect 0.25 0.75) (make-vect 0.125 0.7))
+           (s21 (make-vect 0.125 0.7) (make-vect 0 0.9)))
+       (segments->painter (list s1 s2 s3 s4 s5 s6 s7
+                                s8 s9 s10 s11 s12 s13
+                                s14 s15 s16 s17 s18 s19 s20 s21)) frame)))
+                                
+           
+     
 
 
 
