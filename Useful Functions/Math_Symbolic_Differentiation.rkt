@@ -12,12 +12,18 @@
 ;; ############### 3rd layer ############### ;;
 
 ;; ##### SUM ######
-(define (make-sum a1 a2)
+(define (make-sum . a)
   ;; =number? checks if an expression is equal to a given number
-  (cond ((=number? a1 0) a2)
-        ((=number? a2 0) a1)
-        ((and (number? a1) (number? a2)) (+ a1 a2))
-        (else (list '+ a1 a2))))
+  (let ((reduced-a (filter (lambda (elem)
+                             (not (=number? elem 0)))
+                           a)))
+    ;; define a procedure which takes in a list as argument and returns true if all the elements are numbers.
+    ;; if above predicate is true, then define a procedure accumulator which adds the sum of all the numbers in the list.
+    ;; else, (append (list '+) reduced-a
+    ;; can make use of sequence_operations
+    ;; similar steps for subtraction and product
+    ((and (number? a1) (number? a2)) (+ a1 a2))
+    (else (append (list '+) a))))
 
 ;; A sum is a list whose first element is the symbol +:
 (define (sum? x)
@@ -115,16 +121,3 @@
            (deriv (base exp) var))))
         (else
          (error "unknown expression type -- DERIV" exp))))
-
-(deriv (make-exponentiation 'x 3) 'x)
-(deriv (make-exponentiation 'x 5) 'x)
-(deriv (make-exponentiation 'x 2) 'x)
-(deriv (make-exponentiation 'a 5) 'a)
-(deriv (make-exponentiation 'a 'b) 'a)
-(deriv (make-exponentiation 'a (make-sum 'a 'b)) 'a)
-
-;(* 5 (** x 4))
-;(* 2 x)
-;(* 5 (** a 4))
-;(* b (** a (- b 1)))
-;(* (+ a b) (** a (- (+ a b) 1)))

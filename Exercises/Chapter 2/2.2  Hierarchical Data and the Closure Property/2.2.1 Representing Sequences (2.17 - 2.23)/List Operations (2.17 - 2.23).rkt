@@ -211,6 +211,3 @@
          (for-each-1 p (cdr l)))))
 
 (for-each-1 (lambda (x) (display (square x))) (list 1 2 3 4))
-
-
-
