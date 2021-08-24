@@ -1,4 +1,41 @@
 #lang sicp
+;; ############### Math Operations ############### ;;
+(define (sum term a next b)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
+
+;; ############### Sequence Operations ############### ;;
+(define (filter predicate sequence)
+  (cond ((null? sequence) '())
+        ((predicate (car sequence))
+         (cons (car sequence)
+               (filter predicate (cdr sequence))))
+        (else (filter predicate (cdr sequence)))))
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+
+(define (map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) '() sequence))
+
+(define (includes predicate sequence)
+  ;; returns true if any (predicate element) returns true
+  (cond ((null? sequence) #f)
+        ((predicate (car sequence)) #t)
+        (else (includes predicate (cdr sequence)))))
+
+(define (flatten sequence)
+  ;; if element of sequence is a pair, flatten it
+  (cond
+    ((null? sequence) sequence)
+    ((pair? (car sequence)) (append (car sequence) (flatten (cdr sequence))))
+    (else (cons (car sequence) (flatten (cdr sequence))))))
+
 ;; ############### 1st layer ############### ;;
 (define (variable? x) (symbol? x)) ;; the variables are symbols
 
@@ -11,30 +48,28 @@
 
 ;; ############### 3rd layer ############### ;;
 
-;; ##### SUM ######
+;; ##### ADDITION ######
 (define (make-sum . a)
   ;; =number? checks if an expression is equal to a given number
-  (let ((reduced-a (filter (lambda (elem)
-                             (not (=number? elem 0)))
-                           a)))
+  ;; reduced-a is a list of all the numbers in make-sum
+  (let ((flatlist (flatten a)))                             
+    (define (not_number x) (not (number? x)))
+    (let ((numer-a (filter number? flatlist))
+          (symbol-a (filter not_number flatlist)))
     ;; define a procedure which takes in a list as argument and returns true if all the elements are numbers.
     ;; if above predicate is true, then define a procedure accumulator which adds the sum of all the numbers in the list.
     ;; else, (append (list '+) reduced-a
     ;; can make use of sequence_operations
     ;; similar steps for subtraction and product
-    ((and (number? a1) (number? a2)) (+ a1 a2))
-    (else (append (list '+) a))))
+    (if (not (includes not_number flatlist)) ;; if all elements are numbers
+        (accumulate + 0 flatlist) ;; add them up all together
+        (append (list '+) symbol-a (list (accumulate + 0 numer-a))))))) ;; else, (list '+ 1 2 ...)
 
 ;; A sum is a list whose first element is the symbol +:
 (define (sum? x)
   (and (pair? x) (eq? (car x) '+)))
-
-;; The addend is the second item of the sum list
 (define (addend s) (cadr s))
-
-;; The augend is the third item of the sum list
-(define (augend s) (caddr s))
-
+(define (augend s) (make-sum (cddr s)))
 
 ;; ##### SUBTRACTION ######
 (define (make-subtraction a1 a2)
@@ -45,20 +80,18 @@
 
 (define (subtraction? x)
   (and (pair? x) (eq? (car x) '-)))
-
-;; The addend is the second item of the sum list
 (define (subend s) (cadr s))
-
-;; The augend is the third item of the sum list
 (define (augsub s) (caddr s))
 
 ;; ##### PRODUCT ######
-(define (make-product m1 m2)
-  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
-        ((=number? m1 1) m2)
-        ((=number? m2 1) m1)
-        ((and (number? m1) (number? m2)) (* m1 m2))
-        (else (list '* m1 m2))))
+(define (make-product . a)
+  (let ((flatlist (flatten a)))                             
+    (define (not_number x) (not (number? x)))
+    (let ((numer-a (filter number? flatlist))
+          (symbol-a (filter not_number flatlist)))
+    (if (not (includes not_number flatlist)) ;; if all elements are numbers
+        (accumulate * 1 numer-a) ;; add them up all together
+        (append (list '*) symbol-a (list (accumulate * 1 numer-a))))))) ;; else, (list '+ 1 2 ...)
 
 ;; A product is a list whose first element is *
 (define (product? x)
@@ -66,9 +99,8 @@
 
 ;; The multiplier is the second item of product list
 (define (multiplier p) (cadr p))
-
 ;; The multiplicand is the third item of the product list
-(define (multiplicand p) (caddr p))
+(define (multiplicand p) (make-product (cddr p)))
 
 ;; ##### EXPONENTIATION ######
 (define (expt base n)
@@ -121,3 +153,5 @@
            (deriv (base exp) var))))
         (else
          (error "unknown expression type -- DERIV" exp))))
+
+(deriv '(* x 2 x 3) 'x)

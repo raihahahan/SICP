@@ -31,3 +31,18 @@
 
 (define (map p sequence)
   (accumulate (lambda (x y) (cons (p x) y)) '() sequence))
+
+
+(define (includes predicate sequence)
+  ;; returns true if any (predicate element) returns true
+  (cond ((null? sequence) #f)
+        ((predicate (car sequence)) #t)
+        (else (includes predicate (cdr sequence)))))
+
+(define (flatten sequence)
+  ;; if element of sequence is a pair, flatten it
+  (cond
+    ((null? sequence) sequence)
+    ((pair? (car sequence)) (append (car sequence) (flatten (cdr sequence))))
+    (else (cons (car sequence) (flatten (cdr sequence))))))
+

@@ -15,6 +15,7 @@
 ; cbrt (cube root)
 ; prime?
 ; expmod (a modulo b)
+; summation
 
 (define (even? x)
   ;; takes an argument number x
@@ -122,6 +123,12 @@
          (remainder (square (expmod base (/ exp 2) m)) m)) ;; fast expt method for even exponent. returns remainder i.e (a^(n/2))^2modn
          (else
           (remainder (* base (expmod base (- exp 1) m)) m)))) ;; fast expt method for odd exponent. returns remainder i.e (a(a^(n-1)))modn
+
+(define (sum term a next b)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
 
 
 
