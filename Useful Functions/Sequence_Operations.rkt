@@ -46,3 +46,27 @@
     ((pair? (car sequence)) (append (car sequence) (flatten (cdr sequence))))
     (else (cons (car sequence) (flatten (cdr sequence))))))
 
+(define (max sequence)
+  (define (iter result sequence)
+    (cond ((null? sequence) result)
+          ((> (car sequence) result) (iter (car sequence) (cdr sequence)))
+          (else (iter result (cdr sequence)))))
+  (iter (car sequence) sequence))
+
+(define (first-n sequence n)
+  (define (iter result n)
+    (cond ((null? result) '())
+          ((= n 0) '())
+          (else
+           (append (list (car result)) (iter (cdr result) (- n 1))))))
+  (iter sequence n))
+
+(define (reverse-1 l)
+  (if (null? l)
+      l
+      (append (reverse-1 (cdr l)) (list (car l)))))
+
+(define (last-n sequence n)
+  (let ((r1 (reverse sequence)))
+    (let ((a1 (first-n r1 n)))
+      (reverse a1))))

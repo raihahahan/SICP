@@ -57,13 +57,12 @@
     ;; else, (append (list '+) reduced-a
     ;; can make use of sequence_operations
     ;; similar steps for subtraction and product
-      (cond ((not (includes not_number flatlist)) (accumulate + 0 flatlist)) ;; if all numbers
-            ((null? numer-a)
-             (if (> (list-length symbol-a) 1)
-                 (append (list '+) symbol-a)
-                 (car symbol-a))) ;; if all symbols
-            ((= (accumulate + 0 numer-a) 0) (car symbol-a))
-            (else (append (list '+) symbol-a (list (accumulate + 0 numer-a))))))))
+      (cond ((not (includes not_number flatlist)) (accumulate + 0 flatlist)) ;; if all numbers, then add them up
+            ((or (null? numer-a) (= (accumulate + 0 numer-a) 0)) ;; if list of numbers only is empty
+             (if (> (list-length symbol-a) 1) ;; if more than one symbols
+                 (append (list '+) symbol-a) ;; then append '+ with all the symbols
+                 (car symbol-a))) ;; else, return the first symbol
+            (else (append (list '+) symbol-a (list (accumulate + 0 numer-a)))))))) ;; else, append '+ with all symbols and numbers added together
 
 ;; A sum is a list whose first element is the symbol +:
 (define (sum? x)
@@ -92,15 +91,14 @@
     (define (not_number x) (not (number? x)))
     (let ((numer-a (filter number? flatlist)) ;; list of numbers only
           (symbol-a (filter not_number flatlist))) ;; list of symbols only
-      (define (zero? x) (and (number? x) (= x 0))) ;; checks if any element is zero
-      (cond ((includes zero? numer-a) 0) ;; if any number is zero
+      (define (zero? x) (and (number? x) (= x 0))) ;; checks if any element is zero. 
+      (cond ((includes zero? numer-a) 0) ;; if any number is zero, then return 0
             ((not (includes not_number flatlist)) (accumulate * 1 numer-a)) ;; if all are numbers, multiply all them tgt      
-            ((or (null? numer-a) (= (accumulate + 0 numer-a) 1))
-             (if (> (list-length symbol-a) 1)
-                 (append (list '*) symbol-a)
-                 (car symbol-a)))
-                  ;; if all are symbols or numbers == 1, then we multiply the symbols
-            (else (append (list '*) symbol-a (list (accumulate * 1 numer-a))))))))
+            ((or (null? numer-a) (= (accumulate + 0 numer-a) 1)) ;; if number-list is empty or if all numbers add to 1
+             (if (> (list-length symbol-a) 1) ;; and if more than one symbols,
+                 (append (list '*) symbol-a) ;; then append '* with all the symbols
+                 (car symbol-a))) ;; else, just return the one symbol
+            (else (append (list '*) symbol-a (list (accumulate * 1 numer-a)))))))) ;; else, append all the symbols together with the numbers multiplied
 
 ;; A product is a list whose first element is *
 (define (product? x)
@@ -176,8 +174,14 @@
 ;; (* (** x 2) 3)
 
 ;; Exercise 2.57: arbitrary arguments for sum and product
-(define t '(* x y (+ x 3)))
+(define t (make-product 'x 'y (make-sum 'x 3)))
 (deriv t 'x)
 ;; (+ (* x y) (* y (+ x 3)))
-
+(define p (make-product 'x 'z 'y (make-sum 'x 2 4)))
+(deriv p 'x)
+;; (+ (* x (+ (* z (+ y 0)) 0)) (* z y (+ x 6)))
+(deriv '(* (* x y) (+ x 3)) 'x) 
+;; (+ (* x y) (* y (+ x 3)))
+(deriv '(* x y (+ x 3)) 'x)
+;; (+ (* x y) (* y (+ x 3)))
 
