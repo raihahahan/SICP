@@ -146,3 +146,52 @@
     (if (> r 9)
         (digital_root r)
         r)))
+
+;; Start
+
+(define (answer a counter result)
+  (if (= counter 30)
+      result
+      (let ((d (* (+ a 18) (- a 6))))
+        (cond ((or (< d 0) (and (not (perfect_square? d)) (> d 0))) (answer (+ a 1) (+ counter 1) result))
+              (else
+               (let ((n_ve (/ (- a (sqrt d)) 2)))  
+                 (if (<= (floor n_ve) 0)
+                     (answer (+ a 1) (+ counter 1) result)
+                     (answer (+ a 1) (+ counter 1) (append result (list (round n_ve)))))))))))
+
+
+(define (answer+ a counter result)
+  (let ((d (* (+ a 18) (- a 6))))
+    (cond ((or (< d 0) (and (not (perfect_square? d)) (> d 0))) (answer+ (+ a 1) (+ counter 1) result))
+          (else
+           (let ((n_ve (/ (+ a (sqrt d)) 2)))  
+             (if (= (floor n_ve) 0)
+                 (answer+ (+ a 1) (+ counter 1) result)
+                 (if (>= (floor n_ve) (- 36 3))
+                     (append result (list (round n_ve)))
+                     (answer+ (+ a 1) (+ counter 1) (append result (list (round n_ve)))))))))))
+
+(define (includes elem sequence)
+  ;; returns true if elem exists
+  (cond ((null? sequence) #f)
+        ((= (car sequence) elem) #t)
+        (else (includes elem (cdr sequence)))))
+
+(define (adjoin s1 s2)
+  (cond ((null? s1) s2)
+        ((includes (car s1) s2) (adjoin (cdr s1) s2))
+        (else (cons (car s1) (adjoin (cdr s1) s2)))))
+    
+;; FINAL ANSWER
+(adjoin (answer 3 0 '()) (answer+ 3 0 '()))
+;; '(1.0 3.0 6.0 9.0 15.0 33.0)
+
+
+
+      
+
+
+
+  
+
