@@ -4,14 +4,14 @@ This repository helps to track my progress in the book 'Structure and Interpreta
 
 ## Description
 
-This is entirely for me to track my own progress. As I am only self-learning this book, the solutions for the exercises may not be fully correct. This repo currently only includes exercises for Chapter 1 and less than half of Chapter 2 as it is still a work in progress. It also includes Useful Functions containing procedures which may be helpful in certain chapters. Over time, more exercises will be added into this repo as I progress further into the book.
+This is entirely for me to track my own progress. As I am only self-learning this book, the solutions for the exercises may not be fully correct. This repo currently only includes exercises for Chapter 1 and less than half of Chapter 2 as it is still a work in progress. It also includes Useful Functions containing procedures which may be helpful in certain chapters. Over time, more exercises will be added into this repo as I progress further into the book. The Chapter 1 folder is currently incomplete as I only started tracking my progress upon starting Chapter 2.
 
 In the Exercises directory, each exercise aims to include:
 * Code for the solution
 * Code documentation (eg. comments explaining the required arguments and expected return values)
 * Tests and output
 
-Of course, each of these solutions are not fully polished as this is only for my own progress tracking. For clearer answers, do visit the last two links I've provided under the Acknowledgement header.
+For clearer answers, do visit the last two links I've provided under the Acknowledgement header, or any other sites online which provide full and guided solutions.
 
 ## Getting Started
 
