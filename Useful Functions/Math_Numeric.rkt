@@ -128,7 +128,7 @@
   (if (> a b)
       0
       (+ (term a)
-         (sum term (next a) next b))))
+         (sum term (next a) next b)))) ;;
 
 (define (perfect_square? n) ;; to improve
   (let ((p (sqrt n)))
