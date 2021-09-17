@@ -37,7 +37,6 @@
                     (tree->list-1 (right-branch tree))))))
 
 (define (tree->list-2 tree)
-  ;; Tail recursive
   ;; 2 states:
   ;;   1. tree
   ;;   2. result-list
@@ -132,6 +131,15 @@
 ; Space complexity: O(n);
 
 ;; tree->list-2
-; This procedure handles one node from the left and right branches each until the base case of tree == NULL is reached.
+; This procedure handles one node from the left and right branches each until the base case of tree == NULL is reached. hence, the number of steps has order of growth of the number of nodes in the tree.
+
+;; The calling tree of a list of size n is as shown below. This includes the empty trees.
+;         n
+;        / \
+;     n/2   n/2
+;     / \   / \
+;  n/4 n/4 n/4 n/4
+
+; Total number of nodes  = 2n + 1 == O(n)
 ; Time complexity: O(n);  
 ; Space complexity: O(n);

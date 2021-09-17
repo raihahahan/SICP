@@ -42,7 +42,7 @@
                   (right-result (partial-tree (cdr non-left-elts) ;; constructs a partial tree of the size of the right side of the tree with elements from the elts list
                                               right-size)))
               (let ((right-tree (car right-result)) ;; right-branch of final tree
-                    (remaining-elts (cdr right-result)))
+                    (remaining-elts (cdr right-result))) ;; other elements not in the final tree
                 (cons (make-tree this-entry left-tree right-tree) ;; finally, merge both the left subtree and right subtree to form the entire tree. the remaining elements that do not manage to be in the tree are in the remaining-elts list
                       remaining-elts))))))))
 
@@ -75,7 +75,7 @@
 
 ;; b) Assume that the list and pair operations have growth of O(1). (eg. cons, list, cdr, car).
 
-;; The calling tree of a list of size n is as shown below:
+;; The calling tree of a list of size n is as shown below. This includes the empty trees.
 ;         n
 ;        / \
 ;     n/2   n/2
