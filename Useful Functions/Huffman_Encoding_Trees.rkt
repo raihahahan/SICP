@@ -69,4 +69,37 @@
         (adjoin-set (make-leaf (car pair) ;; symbol
                                (cadr pair)) ;; frequency
                     (make-leaf (cdr pairs))))))
-                               
+
+(define (encode message tree)
+  (if (null? message)
+      '()
+      (append (encode-symbol (car message) tree)
+              (encode (cdr message) tree))))
+
+(define (encode-symbol symbol tree)
+  (define (iter result tree)
+    (cond ((null? tree) (error "SYMBOL NOT FOUND"))
+          ((leaf? tree) ;; if current node is a leaf, else, it is a tree
+           (if (eq? (symbol-leaf tree) symbol)
+               result
+               (error "SYMBOL NOT FOUND" symbol)))
+          ((and (leaf? (left-branch tree)) (leaf? (right-branch tree))) ;; if both branches are leaves
+           (cond ((eq? (symbol-leaf (left-branch tree)) symbol) (append result (list '0)))
+                 ((eq? (symbol-leaf (right-branch tree)) symbol) (append result (list '1)))
+                 (else (error "SYMBOL NOT FOUND" symbol))))
+          ((leaf? (left-branch tree))
+           (if (eq? (symbol-leaf (left-branch tree)) symbol)
+               (append result (list '0))
+               (iter (append result (list '1)) (right-branch tree))))
+          ((leaf? (right-branch tree))
+           (if (eq? (symbol-leaf (right-branch tree)) symbol)
+               (append result (list '1))
+               (iter (append result (list '0)) (left-branch tree))))
+          (else ;; both child are trees
+           (cond ((pair? (iter (append result (list '0)) (left-branch tree))) (iter (append result (list '0)) (left-branch tree)))
+                 ((pair? (iter (append result (list '1)) (right-branch tree))) (iter (append result (list '1)) (right-branch tree)))
+                 (else (error "SYMBOL NOT FOUND" symbol))))))
+  (iter '() tree))
+           
+
+                 
