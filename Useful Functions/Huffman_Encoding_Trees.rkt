@@ -68,7 +68,7 @@
       (let ((pair (car pairs)))
         (adjoin-set (make-leaf (car pair) ;; symbol
                                (cadr pair)) ;; frequency
-                    (make-leaf (cdr pairs))))))
+                    (make-leaf-set (cdr pairs))))))
 
 (define (encode message tree)
   (if (null? message)
