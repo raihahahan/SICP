@@ -2,6 +2,8 @@
 (require racket/trace)
 ;; Exercise 2.69
 
+;; NOTE: this is my first attempt at the huffman encoding tree. the better procedure can be found below. credits to http://community.schemewiki.org/?sicp-ex-2.69
+
 ;; STRATEGY ;;
 ; Use iteration with two states:
 ; (merge-iter pairs result)
@@ -113,11 +115,10 @@
         ((and (= (length result) 1) (null? pairs)) result) ;; final result (explained above in strategy) ------ (**)
         ((= diff smallest) (merge-iter (cddr pairs) (cons (make-code-tree (car pairs) (cadr pairs)) result))) ;; if diff = smallest, then merge into tree
         ((> diff smallest) (merge-iter (make-leaf-set (append (map result->pairs result) (leaves->pairs pairs))) '()))))) ;; ------ (*)
-  (trace merge-iter) ;; for debugging
+  ;(trace merge-iter) ;; for debugging
   (merge-iter pairs '())) ;; tail recursive process
 
-(define (generate-huffman-tree pairs)
-  (successive-merge (make-leaf-set pairs)))
+
 
 ;;; TEST ;;;
 
@@ -132,6 +133,27 @@
 
 (define set-pairs (list l1 l2 l3 l4 l5 l6 l7 l8))
 (define ordered (make-leaf-set set-pairs))
-(generate-huffman-tree set-pairs)
+;ordered
+
 
 ;; '(((leaf A 8) (leaf (((H G) (F E)) ((D C) B)) 9) (A (((H G) (F E)) ((D C) B))) 17))
+
+
+
+
+
+;; MUCH BETTER PROCEDURE (http://community.schemewiki.org/?sicp-ex-2.69)
+(define (successive-merge-1 trees) 
+   (let ((lightest-tree (car trees)) (heavier-trees (cdr trees))) 
+     (if (null? heavier-trees) 
+         lightest-tree 
+         (successive-merge-1 (adjoin-set (make-code-tree lightest-tree (car heavier-trees)) 
+                                       (cdr heavier-trees))))))
+
+(define (generate-huffman-tree pairs)
+  (successive-merge (make-leaf-set pairs)))
+(generate-huffman-tree set-pairs)
+
+(define (generate-huffman-tree-1 pairs)
+  (successive-merge-1 (make-leaf-set pairs)))
+(generate-huffman-tree-1 set-pairs)
