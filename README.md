@@ -26,7 +26,7 @@ MIT/GNU Scheme is what I use to compile my code.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENCE.md] file for details
+This project is licensed under the MIT License - see the [LICENCE.md](SICP/LICENCE.md) file for details
 
 ## Acknowledgments
 
