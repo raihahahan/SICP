@@ -1,5 +1,5 @@
 #lang racket
-
+;; HUFFMAN ENCODING ALGORITHM ;;
 ; Constructors and selectors for individual nodes
 (define (make-leaf symbol weight)
   (list 'leaf symbol weight))
@@ -41,7 +41,6 @@
                     (make-leaf-set (cdr pairs))))))
 
 ;; ALGORITHM 
-
 (define (successive-merge pairs)
   (if (null? (cdr pairs))
       (car pairs)
@@ -51,3 +50,29 @@
 
 (define (generate-huffman-tree pairs)
   (successive-merge (make-leaf-set pairs)))
+
+;; ENCODING ALGORITHM
+(define (encode message tree)
+  (if (null? message)
+      '()
+      (append (encode-symbol (car message) tree)
+              (encode (cdr message) tree))))
+
+(define (encode-symbol symbol tree)
+  (cond
+    ((null? tree) (error "SYMBOL NOT FOUND" symbol))
+    ((memq symbol (symbols (left-branch tree)))
+         (if (leaf? (left-branch tree))
+             (list '0)
+             (append (list '0) (encode-symbol symbol (left-branch tree)))))
+    ((memq symbol (symbols (right-branch tree)))
+         (if (leaf? (right-branch tree))
+             (list '1)
+             (append (list '1) (encode-symbol symbol (right-branch tree)))))
+    (else (error "SYMBOL NOT FOUND" symbol))))
+
+;; TEST
+
+
+
+
