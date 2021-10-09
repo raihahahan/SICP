@@ -60,7 +60,7 @@
 
 (define (encode-symbol symbol tree)
   (cond
-    ((null? tree) (error "SYMBOL NOT FOUND" symbol))
+    ((null? tree) '())
     ((memq symbol (symbols (left-branch tree)))
          (if (leaf? (left-branch tree))
              (list '0)
@@ -70,6 +70,37 @@
              (list '1)
              (append (list '1) (encode-symbol symbol (right-branch tree)))))
     (else (error "SYMBOL NOT FOUND" symbol))))
+
+(define frequencies
+  (list (list 'A 2)
+        (list 'BOOM 1)
+        (list 'GET 2)
+        (list 'JOB 2)
+        (list 'NA 16)
+        (list 'SHA 3)
+        (list 'YIP 9)
+        (list 'WAH 1)))
+
+(define lyrics (list 'GET 'A 'JOB
+                              'SHA 'NA 'NA 'NA 'NA 'NA 'NA 'NA 'NA
+                              'GET 'A 'JOB
+                              'SHA 'NA 'NA 'NA 'NA 'NA 'NA 'NA 'NA
+                              'WAH 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP
+                              'SHA 'BOOM
+                              ))
+(define req-tree (generate-huffman-tree frequencies))
+(define encoded (encode lyrics req-tree))
+encoded
+;; '(1 1 1 1 1 1 1 0 0 1 1 1 1 0 1 1 1 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 0 0 1 1 1 1 0 1 1 1 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 1)
+(length encoded)
+;; 84 bits
+
+;; minimum number of bits required if we used fixed-length code instead:
+;; to distinguish n different symbols, we need logn (base 2) bits per symbol == 3
+(* 3 (length lyrics))
+;; 108 bits
+ 
+ 
 
 ;; TEST
 

@@ -80,7 +80,7 @@
 
 (define (encode-symbol symbol tree)
   (cond
-    ((null? tree) (error "SYMBOL NOT FOUND" symbol))
+    ((null? tree) '())
     ((memq symbol (symbols (left-branch tree)))
          (if (leaf? (left-branch tree))
              (list '0)
