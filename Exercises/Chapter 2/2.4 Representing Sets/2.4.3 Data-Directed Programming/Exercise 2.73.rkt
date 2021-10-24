@@ -63,11 +63,10 @@
 
 ;; The procedure deriv above first checks for base cases, if exp is a number or just a variable.
 ;; Next, it returns the necessary derivative procedure based on the table lookup. This returned deriv procedure is different from deriv, as it takes in as arguments the list of operands without the operator. This is because (get 'deriv (operator exp)) already knows what type of procedure to apply based on the operator of the original expression.
-;; number? and variable? are not able to be assimilated into the table because in order to be added into the table and have the procedure accessed, we need to have the (operator exp) as the type for the table index. However, number? and variable? does not have a type and merely checks if a given expression is only a number or variable respectively.
+;; number? and variable? are not able to be assimilated into the table because in order to be added into the table and have the procedure accessed, we need to have the (operator exp) as the type for the table index. However, number? and variable? do not have a type and merely checks if a given expression is only a number or variable respectively.
 
 ; b. and c.
 
-;; Sum package
 (define (install-deriv-package)
   ;; Procedures global to the deriv package ;;
   
@@ -107,7 +106,6 @@
     (define (deriv-sum exp var) 
       (make-sum (deriv (addend exp) var)
                 (deriv (augend exp) var)))
-    (trace deriv-sum)
     ;; Interface to the rest of the system
     (put 'deriv '+ deriv-sum) 
     (display "SUCCESS -- SUM\n"))
