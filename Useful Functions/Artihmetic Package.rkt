@@ -12,7 +12,7 @@
 
 (define (put op type item)
   (define (put-helper k array)
-    (cond ((null? array) (list(make-entry k item)))
+    (cond ((null? array) (list (make-entry k item)))
           ((equal? (key (car array)) k) array)
           (else (cons (car array) (put-helper k (cdr array))))))
   (set! global-array (put-helper (list op type) global-array)))
@@ -224,40 +224,8 @@
 (define (make-complex-from-mag-ang r a)
   ((get 'make-from-mag-ang 'complex) r a))
 
-;; Exercise 2.77 
+;; Install packages
 (install-scheme-number-package)
 (install-rational-package)
 (install-complex-package)
-
-(define z (make-complex-from-real-imag 3 4))
-(magnitude z)
-
-;; Before modification to procedure:
-    ; application: not a procedure;
-    ; expected a procedure that can be applied to arguments
-    ;  given: "No method for these types -- APPLY-GENERIC"
-
-;; After:
-    ; 5
-
-;; What Alyssa P. Hacker has done is called a pass-through, which is illustrated in Figure 2.24. The new put procedures allows the program to first identify that the magnitude procedure is supposed to act on complex numbers. This will call apply-generic which strips off the complex tag and look at the inner tag, which is rectangular. 
-
-;(magnitude z)
-;(apply-generic 'magnitude z)
-;    (let ((type-tags (map type-tags z))) ;; type-tags === '(complex)
-;      (let ((proc (get 'magnitude z)))  ;; proc === (magnitude) procedure in complex package
-;        (apply proc (map contents z)))) ;; applies magnitude procedure again onto z data object with the '(complex) tag stripped off
-;(magnitude z)
-;(apply-generic 'magnitude z)
-;    (let ((type-tags (map type-tags z))) ;; type-tags === '(rectangular)
-;      (let ((proc (get 'magnitude z))) ;; proc === (magnitude) procedure for rectangular data object found in rectangular package
-;        (apply proc (map contents z)))) ;; applies magnitude procedure again onto the contexts of the z data object, this time recognising that it is acting on a rectangular complex type and hence, returns the value of the magnitude.
-
-;; Hence, apply-generic is called twice.
-; The first call is to strip off the '(complex) tag and get its rectangular contents. (dispatch is magnitude of complex)
-; The second call is to strip off the '(rectangular) tag and apply the procedure on its contents. (dispatch is magnitude of rectangular)
-
-
-       
-
 
