@@ -52,17 +52,19 @@
                     (type2 (cadr type-tags))
                     (a1 (car args))
                     (a2 (cadr args)))
-                (let ((t1->t2 (get-coercion type1 type2))
-                      (t2->t1 (get-coercion type2 type1)))
-                  (cond (t1->t2
-                         (apply-generic op (t1->t2 a1) a2))
-                        (t2->t1
-                         (apply-generic op a1 (t2->t1 a2)))
-                        (else
-                         (error "No method for these types"
-                                (list op type-tags))))))
-              (error "No method for these types"
-                     (list op type-tags)))))))
+                (if (equal? type1 type2)  ;; modification
+                    (error "No method for these types")
+                    (let ((t1->t2 (get-coercion type1 type2))
+                          (t2->t1 (get-coercion type2 type1)))
+                      (cond (t1->t2
+                             (apply-generic op (t1->t2 a1) a2))
+                            (t2->t1
+                             (apply-generic op a1 (t2->t1 a2)))
+                            (else
+                             (error "No method for these types"
+                                    (list op type-tags))))))
+                (error "No method for these types"
+                       (list op type-tags))))))))
           
         
 ;; Generic arithmetic procedures
@@ -279,41 +281,39 @@
 (define (equ? x y)
   (apply-generic 'equ? x y))
 
-; Exercise 2.80
-(define (=zero? x)
-  (apply-generic '=zero? x))
 
-;;; Scheme number
-(=zero? 0) ; #t
-(=zero? 10) ; #f
-'*
+;;; EXERCISE 2.81 ;;;
 
-;;; Rational numbers
-(define a (make-rational 1 2))
-(define b (make-rational 1 2))
-(define c (make-rational 0 1))
+;;;; a.
 
-(=zero? a) ; #f
-(=zero? a) ; #f
-(=zero? c) ; #t
+; 1. Scheme-number: Calling exp with both arguments as scheme-number will result in a working procedure (i.e. (exp x y) returns x ** y).
 
-'*
+; 2. Complex-number: - Calling exp with both arguments as complex-number will first call apply-generic.
+;                    - apply-generic will search in the table for the procedure.
+;                    - However, since exp has not been installed for complex number package, the procedure will create a new variable, t1: (get-coercion 'complex 'complex).
+;                    - t1 returns the procedure (complex->complex)
+;                    - apply-generic then recursively calls itself, (apply-generic op (t1 x) y)
+;                    - However, (t1 x) only returns x itself. This will result in an infinite loop as the procedure does not reach any terminating case.
+;                    - Thus, the procedure will not terminate.
 
-;;; Complex numbers
-(define d_RI (make-complex-from-real-imag 1 2))
-(define e_RI (make-complex-from-real-imag 1 2))
-(define f_RI (make-complex-from-real-imag 0 0))
-(define g_MA (make-complex-from-mag-ang 1 2))
-(define h_MA (make-complex-from-mag-ang 1 2))
-(define i_MA (make-complex-from-mag-ang 0 0))
 
-(=zero? d_RI) ; #f
-(=zero? e_RI) ; #f
-(=zero? f_RI) ; #t
-(=zero? g_MA) ; #f
-(=zero? h_MA) ; #f
-(=zero? i_MA) ; #t
 
+;;;; b.
+
+; No, Louis is incorrect that something had to be done about coercion with arguments of the same type.
+; If the two arguments are of the same type and the procedure is not found in the op-type table, then it is the programmer's responsibility to install the relevant packages into the table.
+; apply-generic already has an error handling mechanism.
+;    1. If procedure not found in op-type table, then coerce if arg_length > 2, else exit.
+;    2. If t1->t2 not possible, then t2->t1. Else, exit.
+; apply-generic works as it is.
+; However, apply-generic is not efficient because if both args are of the same type and the procedure is not found in the op-type table, the procedure should just immediately return an error to prompt the programmer to install the relevant packages.
+; Instead, the procedure still applies (get-coercion) regardless of the types of the arguments, which leads to the number of steps and resources taken in this procedure.
+
+
+
+;;;; c.
+
+; modified above
 
 
 
