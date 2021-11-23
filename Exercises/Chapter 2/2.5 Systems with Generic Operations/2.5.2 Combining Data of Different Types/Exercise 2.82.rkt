@@ -68,18 +68,23 @@
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
     (let ((proc (get op type-tags)))
-      (define (iter level list-of-types)
-        (if (null? list-of-types) ;; if after tyring to coerce each type until we reach null still doesn't work, then return an error.s
-            (error "No method for these types")
-            (let ((coerced (map (lambda (a) (get-coercion a level)) type-tags))) ;; coerced is a list where each element of the type-tags list is raised to the type of the level argument. level is the current type which we are coercing to at that iteration
-              (if (find #f coerced) ;; if any of (get-coercion) in the above mapping returns a false,
-                  (iter (cadr list-of-types) (cdr list-of-types)) ;; then we repeat the iteration. the new level will be (cadr list-of-types), and the new list to keep track of is (cdr list-of-types).
-                  coerced)))) ;; else, we return the coerced list.
-      (if proc
-          (apply proc (map contents args)) ;; if proc exists, then simply apply proc to the argument contents
-          (if (>= (length args) 2)
-              (apply (lambda (a) (apply-generic op a)) (iter (car type-tags) type-tags)) ;; else, we return (apply-generic op a), where a is the coerced list above.
-              (error "No method for these types")))))) ;; else, we return an error
+      (let ((coerced-list (get-coerced-list (car type-tags) type-tags))) ;; get the list of arguments where args are coerced into same type level
+        (if proc
+            (apply proc (map contents args)) ;; if proc exists, then simply apply proc to the argument contents
+            (if (>= (length args) 2)
+                (if coerced-list
+                    (apply (lambda (a) (apply-generic op a)) coerced-list) ;; if such a coerced list exists, we return (apply-generic op a), where a is the coerced list above.
+                    (error "No method for these types")) ;; else, we return an error
+                (error "No method for these types")))))))
+                    
 
-;; Edge cases which will not work:
-; TODO
+(define (get-coerced-list lvl types) ;; returns list of coerced arguments
+  (define (iter level list-of-types)
+    (if (null? list-of-types) ;; if after trying to coerce each type until we reach null still doesn't work, then return an error.
+        #f
+        (let ((coerced (map (lambda (a) (get-coercion a level)) types))) ;; coerced is a list where each element of the type-tags list is raised to the type of the level argument. level is the current type which we are coercing to at that iteration
+          (if (find #f coerced) ;; if any of (get-coercion) in the above mapping returns a false,
+              (iter (cadr list-of-types) (cdr list-of-types)) ;; then we repeat the iteration. the new level will be (cadr list-of-types), and the new list to keep track of is (cdr list-of-types).
+              coerced)))) ;; else, we return the coerced list.
+  (iter lvl types))
+
