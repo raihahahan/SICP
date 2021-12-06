@@ -1,6 +1,25 @@
 #lang scheme
 ;; Exercise 2.82
 
+;; Helper list functions
+(define (find item list)  ;; returns true if item is in list, else false.
+  (cond ((null? list) #f)
+        ((equal? item (car list)) #t)
+        (else
+         (find item (cdr list)))))
+
+(define (index elem list)  ;; returns false if elem is not in list. else, returns the index of elem in list. list is indexed at 0.
+  (define (iter ls result)
+    (cond ((null? ls) #f)
+          ((eq? elem (car ls)) result)
+          (else
+           (iter (cdr ls) (+ result 1)))))
+  (if (find elem list)
+      (iter list 0)
+      #f))
+
+
+
 ;; GET and PUT procedures
 (define global-array '())
 
@@ -57,13 +76,6 @@
         ((pair? datum) (cdr datum))
         (else
          (error "Bad tagged datum -- CONTENTS" datum))))
-
-
-(define (find item list)
-  (cond ((null? list) #f)
-        ((equal? item (car list)) #t)
-        (else
-         (find item (cdr list)))))
 
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))

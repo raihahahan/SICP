@@ -307,7 +307,7 @@
 ;    2. If t1->t2 not possible, then t2->t1. Else, exit.
 ; apply-generic works as it is.
 ; However, apply-generic is not efficient because if both args are of the same type and the procedure is not found in the op-type table, the procedure should just immediately return an error to prompt the programmer to install the relevant packages.
-; Instead, the procedure still applies (get-coercion) regardless of the types of the arguments, which leads to the number of steps and resources taken in this procedure.
+; Instead, the procedure still applies (get-coercion) regardless of the types of the arguments, which leads to an increase in the number of steps and resources taken in this procedure.
 
 
 
