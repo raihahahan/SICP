@@ -406,10 +406,6 @@
 (install-raise-package)
 (install-project-package)
 
-
-;; TYPE HIERARCHY
-(define tower '(integer rational real complex))
-
 ;; GENERAL RAISE AND DROP PROCEDURES
 (define (raise num)
     ((apply-generic 'raise num) num))
@@ -467,7 +463,7 @@
 
 ;; NOTES ;;
 ; drop hasn't been implemented into the system, but tests are added below
-; no checks has been make for raising complex, and dropping an integer
+; no checks has been made for raising complex, and dropping an integer
 ; raise and drops for complex has only been added for rectangular form. it will not work for imaginary form
 ; this version doesn't allow more than two arguments in the arithmetic functions
 
