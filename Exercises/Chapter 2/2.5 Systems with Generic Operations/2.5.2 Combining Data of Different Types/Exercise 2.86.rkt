@@ -247,6 +247,48 @@
 (define (make-rational n d)
   ((get 'make 'rational) n d))
 
+;;************************ TRIGO PACKAGE ************************;;
+(define (install-trigo-package)
+  (define (tag to-attach x)
+    (attach-tag to-attach x))
+
+  (define (numer x)
+    ((get 'numer 'rational) x))
+
+  (define (denom x)
+    ((get 'denom 'rational) x))
+  
+  (define (sine-ordinary x)
+    (sin x))
+
+  (define (sine-rational x)
+    (let ((numerator  (numer x))
+          (denominator (denom x)))
+      (sin (/ numerator denominator))))
+
+  (define (cosine-ordinary x)
+    (cos x))
+
+  (define (cosine-rational x)
+    (let ((numerator  (numer x))
+          (denominator (denom x)))
+      (cos (/ numerator denominator))))
+
+  (put 'sine 'scheme-number sine-ordinary)
+  (put 'sine 'rational sine-rational)
+  (put 'cosine 'scheme-number cosine-ordinary)
+  (put 'cosine 'rational cosine-rational)
+
+  'SUCCESS--TRIGO-PACKAGE)
+
+(install-trigo-package)
+
+(define (sine x) (apply-generic 'sine x))
+(define (cosine x) (apply-generic 'cosine x))
+
+;lll
+  
+  ;; TODO : TRIGO PACKAGE
 
 ;;************************ COMPLEX PACKAGE ************************;;
 (define (install-complex-package)
@@ -257,17 +299,17 @@
     ((get 'make-from-mag-ang 'polar) r a))
   ;; internal procedures
   (define (add-complex z1 z2)
-    (make-from-real-imag (+ (real-part z1) (real-part z2))
-                         (+ (imag-part z1) (imag-part z2))))
+    (make-from-real-imag (add (real-part z1) (real-part z2))
+                         (add (imag-part z1) (imag-part z2))))
   (define (sub-complex z1 z2)
-    (make-from-real-imag (- (real-part z1) (real-part z2))
-                         (- (imag-part z1) (imag-part z2))))
+    (make-from-real-imag (sub (real-part z1) (real-part z2))
+                         (sub (imag-part z1) (imag-part z2))))
   (define (mul-complex z1 z2)
-    (make-from-mag-ang (* (magnitude z1) (magnitude z2))
-                       (+ (angle z1) (angle z2))))
+    (make-from-mag-ang (mul (magnitude z1) (magnitude z2))
+                       (add (angle z1) (angle z2))))
   (define (div-complex z1 z2)
-    (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
-                       (- (angle z1) (angle z2))))
+    (make-from-mag-ang (div (magnitude z1) (magnitude z2))
+                       (sub (angle z1) (angle z2))))
   (define (equ? x y)
     (let ((type-x (type-tag x))
           (type-y (type-tag y)))
@@ -468,6 +510,8 @@
 ; this version doesn't allow more than two arguments in the arithmetic functions
 
 ;; Test variables
+
+
 (define a-int 10)
 (define b-int 234)
 
@@ -485,6 +529,7 @@
 (display "***************RAISE*******************")
 
 ;; (raise num): raises a number one level up the tower.
+(newline)
 (raise a-int)
 (raise b-int)
 (raise a-rat)
@@ -496,7 +541,7 @@
 ;(rational 10 . 1)
 ;(rational 234 . 1)
 ;0.08955223880597014
-;0.2857142857142857
+;62.0
 ;(complex rectangular 1.0 . 0)
 ;(complex rectangular 12.512 . 0)
 
@@ -576,7 +621,7 @@
 ;-2.0
 ;-224
 ;-12.42244776119403
-;222.0
+;-222.0
 
 (display "******************DIVISION******************")
 (newline)
@@ -593,12 +638,12 @@
 ;OUTPUT
 ;(rational 335 . 3)
 ;10.0
-;(complex polar 0.8333333333333334 . 0)
+;(complex polar 1.2 . 0)
 ;5/117
 ;0.007157308088712447
-;(complex polar 19.5 . 0)
+;(complex polar 0.05128205128205128 . 0)
 
-(display "******************DIVISION******************")
+(display "******************MULTIPLICATION******************")
 (newline)
 
 ;; (mul x y)
