@@ -1,5 +1,6 @@
 #lang scheme
-;; Exercise 2.85
+
+
 
 ;; Helper math procedures
 (define (square x)
@@ -100,6 +101,8 @@
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
 
+
+
 ;;************************ COMPLEX NUMBERS SYSTEM ************************;;
 
 ;;; RECTANGULAR
@@ -167,6 +170,8 @@
     (equal? x y))
   (define (=zero? x)
     (= x 0))
+  (define (negate x)
+    (* -1 x))
                    
   (put 'add '(real real)
        (lambda (x y) (+ x y)))
@@ -189,6 +194,8 @@
   (put 'equ? '(real real) equ?)
   (put 'equ? '(integer integer) equ?)
   (put '=zero? '(scheme-number) =zero?)
+  (put 'negate '(integer) negate)
+  (put 'negate '(real) negate)
   'SUCCESS---PRIMITIVE-NUMBERS)
 
 ; Constructor for (tagged) ordinary numbers
@@ -199,6 +206,8 @@
 ;;************************ RATIONAL PACKAGE ************************;;
 (define (install-rational-package)
   ;; internal procedures
+  (define (tag x) (attach-tag 'rational x))
+  
   (define (numer x) (car x))
   (define (denom x) (cdr x))
   (define (make-rat n d)
@@ -222,8 +231,11 @@
     (equal? x y))
   (define (=zero? x)
     (= (numer x) 0))
+  (define (negate x)
+    (tag (make-rat (* -1 (numer x))
+                   (denom x))))
   ;; interface to rest of the system
-  (define (tag x) (attach-tag 'rational x))
+  
   (put 'add '(rational rational)
        (lambda (x y) (tag (add-rat x y))))
   (put 'sub '(rational rational)
@@ -241,6 +253,7 @@
   
   (put 'equ? '(rational rational) equ?)
   (put '=zero? '(rational) =zero?)
+  (put 'negate '(rational) negate)
   'SUCCESS---RATIONAL-NUMBERS)
 
 ; Constructor for (tagged) rational numbers
@@ -262,7 +275,7 @@
     (sin x))
 
   (define (sine-rational x)
-    (let ((numerator  (numer x))
+    (let ((numerator (numer x))
           (denominator (denom x)))
       (sin (/ numerator denominator))))
 
@@ -287,6 +300,8 @@
 ;;************************ COMPLEX PACKAGE ************************;;
 (define (install-complex-package)
   ;; imported procedures from rectangular and polar packages
+  (define (tag z) (attach-tag 'complex z))
+  
   (define (make-from-real-imag x y)
     ((get 'make-from-real-imag 'rectangular) x y))
   (define (make-from-mag-ang r a)
@@ -318,9 +333,15 @@
 
   (define (=zero? x)
     (<= (magnitude x) 0.0001))
-        
+
+  (define (negate x)
+    (if (equal? (type-tag x) 'rectangular)
+        (tag (make-from-real-imag (negate (real-part x))
+                                  (negate (imag-part x))))
+        (tag (make-from-mag-ang (magnitude x)
+                                (+ (angle x) pi)))))
+    
     ;; interface to rest of the system
-  (define (tag z) (attach-tag 'complex z))
   
   (put 'real-part '(complex) real-part)
   (put 'imag-part '(complex) imag-part)
@@ -495,171 +516,237 @@
           (iter num shortened)
           #f))))
 
-;; **************************** TEST ***************************************** ;;
+(define (negate x)
+  (apply-generic 'negate x))
 
-;; NOTES ;;
-; drop hasn't been implemented into the system, but tests are added below
-; no checks has been made for raising complex, and dropping an integer
-; raise and drops for complex has only been added for rectangular form. it will not work for imaginary form
-; this version doesn't allow more than two arguments in the arithmetic functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Test variables
+;; SYMBOLIC ALGEBRA
 
+(define (install-common-termlist-proc-package)
+  (define (=zero? x)
+    (if (pair? x)
+         #f
+         (= x 0)))
+  (define the-empty-termlist '())
+  (define (rest-terms term-list) (cdr term-list))
+  (define (empty-termlist? term-list) (null? term-list))
+  (define (make-term order coeff) (list order coeff))
+  (define (order term) (car term))
+  (define (coeff term) (cadr term))
 
-(define a-int 10)
-(define b-int 234)
+  ;; interface to rest of system
+  (put '=zero? 'common-termlist =zero?)
+  (put 'the-empty-termlist 'common-termlist the-empty-termlist)
+  (put 'rest-terms 'common-termlist rest-terms)
+  (put 'empty-termlist? 'common-termlist empty-termlist?)
+  (put 'make-term 'common-termlist make-term)
+  (put 'order 'common-termlist order)
+  (put 'coeff 'common-termlist coeff)
+  'SUCCESS---COMMON-TERMLIST-PROCEDURES)
 
-(define a-rat (make-rational 12 134))
-(define b-rat (make-rational 124 2))
+(install-common-termlist-proc-package)
 
-(define a-real 1.0)
-(define b-real 12.512)
+(define (install-sparse-poly-termlist-package)
+  ;; import procedures
+  (define =zero? (get 'zero=? 'common-termlist))
+  (define coeff (get 'coeff 'common-termlist))
 
-(define a-complex (make-complex-from-real-imag 12 0))
-(define b-complex (make-complex-from-real-imag 10 13))
-(define c-complex (make-complex-from-mag-ang 2 5))
-(define d-complex (make-complex-from-mag-ang 10 3))
+  (define (adjoin-term term term-list)
+    (if (=zero? (coeff term))
+        term-list
+        (cons term term-list)))
+  
+  (define (first-term term-list) (car term-list))
+  
+  ;; interface to rest of system
+  (define (tag x) (attach-tag 'sparse x))
+  
+  (put 'adjoin-term '(sparse) (lambda (i j) (adjoin-term i j)))
+  (put 'first-term '(sparse) first-term)
+  
+  'SUCCESS---SPARSE-TERMLIST-POLY-PACKAGE)
 
-(display "***************RAISE*******************")
+(define (install-dense-poly-termlist-package)
+  ;; import procedures
+  (define order (get 'order 'common-termlist))
+  (define coeff (get 'coeff 'common-termlist))
+  (define rest-terms (get 'rest-terms 'common-termlist))
+  (define make-term (get 'make-term 'common-termlist))
 
-;; (raise num): raises a number one level up the tower.
-(newline)
-(raise a-int)
-(raise b-int)
-(raise a-rat)
-(raise b-rat)
-(raise a-real)
-(raise b-real)
+  (define (adjoin-term term term-list)
+    (let ((exponent (order term)))
+      (define (iter currExp result)
+        (cond
+          ((= currExp exponent) (cons (coeff term) (rest-terms result)))
+          ((< currExp exponent) (iter (+ currExp 1) (cons 0 result)))
+          (else
+           (cons (car result) (iter (- currExp 1) (cdr result))))))
+      (iter (- (length term-list) 1) term-list)))
 
-; OUTPUT:
-;(rational 10 . 1)
-;(rational 234 . 1)
-;0.08955223880597014
-;62.0
-;(complex rectangular 1.0 . 0)
-;(complex rectangular 12.512 . 0)
+  (define (first-term term-list)
+    (make-term
+     (- (length term-list) 1)
+     (car term-list)))
 
-(display "******************DROP******************")
-(newline)
+   ;; interface to rest of system
+  (define (tag x) (attach-tag 'dense x))
+  
+  (put 'adjoin-term '(dense) (lambda (i j) (adjoin-term i j)))
+  (put 'first-term '(dense) first-term)
+  
+  'SUCCESS---DENSE-TERMLIST-POLY-PACKAGE)
 
-;; (drop num): drops a number one level down the tower.
-(drop a-complex)
-(drop b-complex)
-(drop a-real)
-(drop b-real)
-(drop a-rat)
-(drop b-rat)
+(install-sparse-poly-termlist-package)
+(install-dense-poly-termlist-package)
 
-; OUTPUT:
-;12.0
-;(complex rectangular 10 . 13)
-;(rational 1.0 . 1.0)
-;12.512
-;(rational 6 . 67)
-;62
+(define (install-polynomial-package)
+  ;; internal procedures
+  
+  ;; representation of poly
+  (define (make-poly variable term-list) (cons variable term-list))
+  (define (variable p) (car p))
+  (define (term-list p) (cdr p))
+  
+  (define (variable? x) (symbol? x))
+  (define (same-variable? v1 v2)
+    (and (variable? v1) (variable? v2) (eq? v1 v2)))
 
-(display "******************RAISE-TOWER******************")
-(newline)
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;; TERMS AND TERMLISTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (raise-tower type-to tower num): raises a number successively up the tower until it reaches level type-to
-(raise-tower 'complex arithmetic-tower a-int)
-(raise-tower 'complex arithmetic-tower a-rat)
-(raise-tower 'complex arithmetic-tower a-real)
-(raise-tower 'rational arithmetic-tower a-int)
-(raise-tower 'real arithmetic-tower a-int)
-(raise-tower 'real arithmetic-tower a-rat)
+  ;; import common procedures
+  (define empty-termlist? (get 'empty-termlist? 'common-termlist))
+  (define the-empty-termlist (get 'the-empty-termlist 'common-termlist))
+  (define rest-terms (get 'rest-terms 'common-termlist))
+  (define make-term (get 'make-term 'common-termlist))
+  (define order (get 'order 'common-termlist))
+  (define coeff (get 'coeff 'common-termlist))
+  (define =zero? (get 'coeff 'common-termlist))
 
-; OUTPUT:
-;(complex rectangular 10.0 . 0)
-;(complex rectangular 0.08955223880597014 . 0)
-;(complex rectangular 1.0 . 0)
-;(rational 10 . 1)
-;10.0
-;0.08955223880597014
+  ;; unique procedures based on density of polynomial
+  (define (first-term L) (apply-generic 'first-term L))
+  (define (adjoin-term term L)
+    ((get 'adjoin-term (type-tag L)) term L))
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;; NEGATE POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  (define (negate-terms L)
+    (if (empty-termlist? L)
+        the-empty-termlist
+        (let ((first (first-term L)))
+          (adjoin-term (make-term (order first)
+                                  (negate (coeff first)))
+                       (negate-terms (rest-terms L))))))
+  
+  (define (negate-poly p)
+    (make-poly (variable p)
+               (negate-terms (term-list p))))
 
-(display "******************ADDITION******************")
-(newline)
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;; ADD POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (add x y)
-(add a-int a-rat)
-(add a-int a-real)
-(drop (add a-int a-complex))
+  (define (add-terms L1 L2)
+    (cond ((empty-termlist? L1) L2)
+          ((empty-termlist? L2) L1)
+          (else
+           (let ((t1 (first-term L1))
+                 (t2 (first-term L2)))
+             (cond ((> (order t1) (order t2))
+                    (adjoin-term
+                     t1                                                
+                     (add-terms (rest-terms L1) L2)))
+                   ((< (order t1) (order t2))
+                    (adjoin-term
+                     t2
+                     (add-terms L1 (rest-terms L2))))
+                   (else
+                    (adjoin-term
+                     (make-term (order t1)
+                                (add (coeff t1) (coeff t2)))
+                     (list (type-tag L1)
+                           (add-terms (rest-terms L1)
+                                (rest-terms L2))))))))))
 
-(add a-int b-int)
-(add a-rat b-real)
-(drop (add a-complex b-int))
-
-; OUTPUT:
-;(rational 676 . 67)
-;11.0
-;22.0
-;244
-;12.60155223880597
-;246.0
-
-(display "******************SUBTRACTION******************")
-(newline)
-
-;; (sub x y)
-(sub a-int a-rat)
-(sub a-int a-real)
-(drop (sub a-int a-complex))
-
-(sub a-int b-int)
-(sub a-rat b-real)
-(drop (sub a-complex b-int))
-
-;OUTPUT:
-;(rational 664 . 67)
-;9.0
-;-2.0
-;-224
-;-12.42244776119403
-;-222.0
-
-(display "******************DIVISION******************")
-(newline)
-
-;; (div x y)
-(div a-int a-rat)
-(div a-int a-real)
-(div a-int a-complex)
-
-(div a-int b-int)
-(div a-rat b-real)
-(div a-complex b-int)
-
-;OUTPUT
-;(rational 335 . 3)
-;10.0
-;(complex polar 1.2 . 0)
-;5/117
-;0.007157308088712447
-;(complex polar 0.05128205128205128 . 0)
-
-(display "******************MULTIPLICATION******************")
-(newline)
-
-;; (mul x y)
-(mul a-int a-rat)
-(mul a-int a-real)
-(mul a-int a-complex)
-
-(mul a-int b-int)
-(mul a-rat b-real)
-(mul a-complex b-int)
-
-;OUTPUT:
-;(rational 60 . 67)
-;10.0
-;(complex polar 120.0 . 0)
-;2340
-;1.1204776119402984
-;(complex polar 2808.0 . 0)
+  
+  (define (add-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (make-poly (variable p1)
+                   (add-terms (term-list p1)
+                              (term-list p2)))
+        (error "Polys not in same var: ADD-POLY" (list p1 p2))))
 
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;; MUL POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define (mul-terms L1 L2)
+    (if (empty-termlist? L1)
+        (the-empty-termlist)
+        (add-terms (mul-term-by-all-terms (first-term L1) L2)
+                   (mul-terms (rest-terms L1) L2))))
+  
+  (define (mul-term-by-all-terms t1 L)
+    (if (empty-termlist? L)
+        (the-empty-termlist)
+        (let ((t2 (first-term L)))
+          (adjoin-term
+           (make-term (+ (order t1) (order t2))
+                      (mul (coeff t1) (coeff t2)))
+           (mul-term-by-all-terms t1 (rest-terms L))))))
+  
+  (define (mul-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (make-poly (variable p1)
+                   (mul-terms (term-list p1) (term-list p2)))
+         (error "Polys not in same var: MUL-POLY" (list p1 p2))))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;; SUB POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+               
+  (define (sub-terms L1 L2)
+    (add-terms L1 (negate L2)))
+
+  (define (sub-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (add-poly p1 (negate-poly p2))
+        (error "Polys not in same var: MUL-POLY" (list p1 p2))))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  ;; interface to rest of the system
+  (define (tag p) (attach-tag 'polynomial p))
+  (put 'negate '(polynomial) negate-poly)
+  (put 'add '(polynomial polynomial)
+       (lambda (p1 p2) (tag (add-poly p1 p2))))
+  (put 'mul '(polynomial polynomial)  
+       (lambda (p1 p2) (tag (mul-poly p1 p2))))
+  (put 'sub '(polynomial polynomial)
+      (lambda (p1 p2) (tag (sub-poly p1 p2))))
+  (put '=zero? 'polynomial =zero?)
+  
+  (put 'make 'polynomial
+       (lambda (var terms) (tag (make-poly var terms))))
+  'SUCCESS---POLYNOMIAL-PACKAGE)
+
+(install-polynomial-package)
+
+(define (make-polynomial var terms)
+  ((get 'make 'polynomial) var terms))
+ 
+(define sparse-L-a (list 'sparse (list 3 4) (list 2 7) (list 1 5)))
+(define sparse-L-b (list 'sparse (list 3 2) (list 2 4)))
+(define dense-L-a (list 'dense 2 0 2 4 1 29))
+
+(define a-p (make-polynomial 'x sparse-L-a))
+(define b-p (make-polynomial 'x sparse-L-b))
+(define c-p (make-polynomial 'x dense-L-a))
+
+(add b-p b-p)
+;((get 'adjoin-term '(dense)) (list 1 2) dense-L-a)
 
 
-    
+;; TODO
 
-    
+
+
+
+
+
+
