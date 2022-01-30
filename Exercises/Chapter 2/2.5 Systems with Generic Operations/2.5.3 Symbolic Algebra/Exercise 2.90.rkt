@@ -1,7 +1,5 @@
 #lang scheme
 
-
-
 ;; Helper math procedures
 (define (square x)
   (* x x))
@@ -100,6 +98,8 @@
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
+
+(type-tag 100)
 
 
 
@@ -738,7 +738,6 @@
 (define b-p (make-polynomial 'x sparse-L-b))
 (define c-p (make-polynomial 'x dense-L-a))
 
-(add b-p b-p)
 ;((get 'adjoin-term '(dense)) (list 1 2) dense-L-a)
 
 

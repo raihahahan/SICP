@@ -99,7 +99,6 @@
 (define (div x y) (apply-generic 'div x y))
 
 
-
 ;;************************ COMPLEX NUMBERS SYSTEM ************************;;
 
 ;;; RECTANGULAR
@@ -114,7 +113,7 @@
   (define (angle z)
     (atan (imag-part z) (real-part z)))
   (define (make-from-mag-ang r a) 
-    (cons (* r (cos a)) (* r (sin a))))
+    (cons (* r (cosine a)) (* r (sine a))))
 
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'rectangular x))
@@ -161,44 +160,58 @@
 (install-rectangular-package)
 (install-polar-package)
 
+
 ;;************************ ORDINARY PRIMITIVE NUMBERS ************************;;
-(define (install-scheme-number-package)
+
+;;************************ INTEGER PACKAGE ************************;;
+(define (install-integer-package)
   (define (equ? x y)
     (equal? x y))
   (define (=zero? x)
     (= x 0))
   (define (negate x)
     (* -1 x))
-                   
-  (put 'add '(real real)
-       (lambda (x y) (+ x y)))
+
   (put 'add '(integer integer)
        (lambda (x y) (+ x y)))
-  (put 'sub '(real real)
-       (lambda (x y) (- x y)))
    (put 'sub '(integer integer)
+       (lambda (x y) (- x y)))
+  (put 'mul '(integer integer)
+       (lambda (x y) (* x y)))
+  (put 'div '(integer integer)
+       (lambda (x y) (/ x y)))
+  (put 'equ? '(integer integer) equ?)
+  (put '=zero? '(integer) =zero?)
+  (put 'negate '(integer) negate)
+  'SUCCESS---INTEGER-PACKAGE)
+
+
+;;************************ REAL PACKAGE ************************;;
+(define (install-real-package)
+  (define (equ? x y)
+    (equal? x y))
+  (define (=zero? x)
+    (= x 0))
+  (define (negate x)
+    (* -1 x))
+
+  (put 'add '(real real)
+       (lambda (x y) (+ x y)))
+   (put 'sub '(real real)
        (lambda (x y) (- x y)))
   (put 'mul '(real real)
        (lambda (x y) (* x y)))
-  (put 'mul '(integer integer)
-       (lambda (x y) (* x y)))
   (put 'div '(real real)
        (lambda (x y) (/ x y)))
-  (put 'div '(integer integer)
-       (lambda (x y) (/ x y)))
-  (put 'make 'scheme-number
-       (lambda (x) x))
   (put 'equ? '(real real) equ?)
-  (put 'equ? '(integer integer) equ?)
-  (put '=zero? '(scheme-number) =zero?)
-  (put 'negate '(integer) negate)
+  (put '=zero? '(real) =zero?)
   (put 'negate '(real) negate)
-  'SUCCESS---PRIMITIVE-NUMBERS)
+  'SUCCESS---REAL-PACKAGE)
 
-; Constructor for (tagged) ordinary numbers
-(define (make-scheme-number n)
-  ((get 'make 'scheme-number) n))
+(install-integer-package)
+(install-real-package)
 
+;;************************ END OF ORDINARY PRIMITIVE NUMBERS ************************;;
 
 ;;************************ RATIONAL PACKAGE ************************;;
 (define (install-rational-package)
@@ -284,14 +297,23 @@
           (denominator (denom x)))
       (cos (/ numerator denominator))))
 
-  (put 'sine 'scheme-number sine-ordinary)
-  (put 'sine 'rational sine-rational)
-  (put 'cosine 'scheme-number cosine-ordinary)
-  (put 'cosine 'rational cosine-rational)
+  (put 'sine '(integer) sine-ordinary)
+  (put 'sine '(rational) sine-rational)
+  (put 'sine '(real) sine-ordinary)
+  
+  (put 'cosine '(integer) cosine-ordinary)
+  (put 'cosine '(rational) cosine-rational)
+  (put 'cosine '(real) cosine-ordinary)
 
   'SUCCESS--TRIGO-PACKAGE)
 
-  
+(install-trigo-package)
+
+(define (sine x)
+  (apply-generic 'sine x))
+(define (cosine x)
+  (apply-generic 'cosine x))
+
   ;; TODO : TRIGO PACKAGE
 
 ;;************************ COMPLEX PACKAGE ************************;;
@@ -368,7 +390,6 @@
   ((get 'make-from-mag-ang 'complex) r a))
 
 ;; Install packages
-(install-scheme-number-package)
 (install-rational-package)
 (install-complex-package)
 
@@ -667,9 +688,6 @@
 (define (make-polynomial var terms)
   ((get 'make 'polynomial) var terms))
 
+
 (define a-p (make-polynomial 'x (list (list 3 4) (list 2 7) (list 1 5))))
 (define b-p (make-polynomial 'x (list (list 3 2) (list 2 4))))
-
-
-
-
