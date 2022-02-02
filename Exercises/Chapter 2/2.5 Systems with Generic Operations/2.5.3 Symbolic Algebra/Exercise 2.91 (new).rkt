@@ -519,7 +519,7 @@
                          ("No method for these types -- APPLY-GENERIC"
                           (list op type-tags))))
                     (error
-                     ("No method for these types -- APPLY-GENERIC"
+                     (list op type-tags
                       (list op type-tags)))))))))))
 
 (define (raise-tower type-to tower num) ;; raises the type of argument until it reaches intended type. returns the number with raised type
@@ -580,7 +580,7 @@
     (let ((o (order term))
           (c (coeff term)))
     (if (=zero? c)
-        term-list
+        (tag term-list)
         (tag (cons (make-term o c) term-list)))))
   (define (first-term term-list) (car term-list))
   (define the-empty-termlist (tag '()))
@@ -670,6 +670,7 @@
     (apply-generic 'rest-terms termlist))
   (define (empty-termlist? termlist)
     (apply-generic 'empty-termlist? termlist))
+  (define the-empty-termlist '())
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;; TERM SELECTORS AND CONSTRUCTORS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -683,7 +684,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;; NEGATE POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   (define (negate-terms L)
-    (if (empty-termlist? L)
+    (if (empty-termlist? L) 
         L
         (let ((first (first-term L)))
           (adjoin-term (make-term (order first)
@@ -752,24 +753,57 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;; SUB POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
                
   (define (sub-terms L1 L2)
-    (add-terms L1 (negate L2)))
+    (add-terms L1 (negate-terms L2)))
 
   (define (sub-poly p1 p2)
     (if (same-variable? (variable p1) (variable p2))
-        (add-poly p1 (negate-poly p2))
+        (add-poly p1 (negate p2))
         (error "Polys not in same var: MUL-POLY" (list p1 p2))))
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;; DIV POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  (define (div-terms L1 L2)
+    (if (empty-termlist? L1)
+        (list '() '())
+        (let ((t1 (first-term L1))
+              (t2 (first-term L2)))
+          (if (> (order t2) (order t1))
+              (list (list (type-tag L1)'()) L1)
+              (let ((new-c (div (coeff t1) (coeff t2)))
+                    (new-o (- (order t1) (order t2))))
+                (let ((new-quotient (make-term new-o new-c)))
+                  (let ((rest-of-result                         
+                         (let ((multiplied (mul-term-by-all-terms new-quotient L2)))
+                           (let ((new-numer (sub-terms L1 multiplied)))
+                             (div-terms new-numer L2)))))
+                    (list (adjoin-term new-quotient (first rest-of-result))
+                          (second rest-of-result))
+                  )))))))
+  
+  (define (div-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (div-terms
+         (term-list p1)
+         (term-list p2))
+        (error "different variables")
+        ))
+        
+                                
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   ;; interface to rest of the system
   (define (tag p) (attach-tag 'polynomial p))
   (put 'negate '(polynomial) negate-poly)
+  ;(put 'negate '(sparse) negate-terms)
+  ;(put 'negate '(dense) negate-terms)
   (put 'add '(polynomial polynomial)
        (lambda (p1 p2) (tag (add-poly p1 p2))))
   (put 'mul '(polynomial polynomial)  
        (lambda (p1 p2) (tag (mul-poly p1 p2))))
   (put 'sub '(polynomial polynomial)
       (lambda (p1 p2) (tag (sub-poly p1 p2))))
+  (put 'div '(polynomial polynomial)
+       (lambda (p1 p2) (tag (div-poly p1 p2))))
   (put '=zero? 'polynomial =zero?)
   
   (put 'make 'polynomial
@@ -784,7 +818,6 @@
   ((get 'make-term 'term) order coeff))
 
 ;; TEST ;;
-;; update 31012022: e-p (terms with non-ordinary numbers) do not work with sub and mul yet
 
 (define a-p (make-polynomial 'x (list 'sparse (make-term 3 4) (make-term 2 7) (make-term 1 5))))
 (define b-p (make-polynomial 'x (list 'sparse (make-term 3 2) (make-term 2 4))))
@@ -796,53 +829,18 @@
                                       (make-term 2 (make-complex-from-real-imag 1 2))
                                       (make-term 4 2))))
 
+;; TEST
+
+(define f-p (make-polynomial 'x (list 'sparse (make-term 5 1) (make-term 0 -1))))
+(define g-p (make-polynomial 'x (list 'sparse (make-term 2 1) (make-term 0 -1))))
+(div f-p g-p)
+
+;; OUTPUT
+;'(polynomial (sparse (term 3 1) (term 1 1) ()) (sparse (term 1 1) (term 0 -1)))
+
+
                                      
 
-(newline)
-a-p
-b-p
-c-p
-d-p
-e-p
-(display "**************")
-(newline)
-'ADDITION
-(add a-p b-p)
-(add c-p d-p)
-(add a-p e-p)
-(newline)
-'SUBSTRACTION
-(sub a-p b-p)
-(sub c-p d-p)
-;;(sub b-p e-p)
-(newline)
-'MULTIPLICATION
-(mul a-p b-p)
-(mul c-p d-p)
-;;(mul a-p e-p)
-
-
-;; OUTPUT ;;
-
-;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5))
-;'(polynomial x sparse (term 3 2) (term 2 4))
-;'(polynomial x dense 3 2 4 0 0 1 2 4)
-;'(polynomial x dense 0 0 2 4 12 9)
-;'(polynomial x sparse (term 3 (rational 4 . 5)) (term 2 (complex rectangular 1 . 2)) (term 4 2))
-
-;**************
-;'ADDITION
-;'(polynomial x sparse (term 3 6) (term 2 11) (term 1 5))
-;'(polynomial x dense 3 2 4 0 2 5 14 13)
-;'(polynomial x sparse (term 3 (rational 24 . 5)) (term 2 (complex rectangular 8.0 . 2)) (term 4 2) (term 1 5))
-
-;'SUBSTRACTION
-;'(polynomial x sparse (term 3 2) (term 2 3) (term 1 5))
-;'(polynomial x dense 3 2 4 0 -2 -3 -10 -5)
-
-;'MULTIPLICATION
-;'(polynomial x sparse (term 6 8) (term 5 30) (term 4 38) (term 3 20))
-;'(polynomial x dense 0 0 6 16 52 67 66 38 8 28 49 66 36)
 
 
 
