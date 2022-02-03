@@ -93,12 +93,6 @@
         (else
          (error "Bad tagged datum -- CONTENTS" datum))))
 
-;; Generic arithmetic procedures
-(define (add x y) (apply-generic 'add x y))
-(define (sub x y) (apply-generic 'sub x y))
-(define (mul x y) (apply-generic 'mul x y))
-(define (div x y) (apply-generic 'div x y))
-
 
 ;;************************ COMPLEX NUMBERS SYSTEM ************************;;
 
@@ -153,14 +147,6 @@
        (lambda (r a) (tag (make-from-mag-ang r a))))
   'SUCCESS--POLAR-PACKAGE)
 
-(define (real-part z) (apply-generic 'real-part z))
-(define (imag-part z) (apply-generic 'imag-part z))
-(define (magnitude z) (apply-generic 'magnitude z))
-(define (angle z) (apply-generic 'angle z))
-
-(install-rectangular-package)
-(install-polar-package)
-
 
 ;;************************ ORDINARY PRIMITIVE NUMBERS ************************;;
 
@@ -174,6 +160,8 @@
     (* -1 x))
 
   (put 'add '(integer integer)
+       (lambda (x y) (+ x y)))
+  (put 'add '(integer real)
        (lambda (x y) (+ x y)))
    (put 'sub '(integer integer)
        (lambda (x y) (- x y)))
@@ -198,6 +186,8 @@
 
   (put 'add '(real real)
        (lambda (x y) (+ x y)))
+  (put 'add '(real integer)
+       (lambda (x y) (+ x y)))
    (put 'sub '(real real)
        (lambda (x y) (- x y)))
   (put 'mul '(real real)
@@ -208,9 +198,6 @@
   (put '=zero? '(real) =zero?)
   (put 'negate '(real) negate)
   'SUCCESS---REAL-PACKAGE)
-
-(install-integer-package)
-(install-real-package)
 
 ;;************************ END OF ORDINARY PRIMITIVE NUMBERS ************************;;
 
@@ -267,10 +254,6 @@
   (put 'negate '(rational) negate)
   'SUCCESS---RATIONAL-NUMBERS)
 
-; Constructor for (tagged) rational numbers
-(define (make-rational n d)
-  ((get 'make 'rational) n d))
-
 ;;************************ TRIGO PACKAGE ************************;;
 (define (install-trigo-package)
   (define (tag to-attach x)
@@ -308,12 +291,7 @@
 
   'SUCCESS--TRIGO-PACKAGE)
 
-(install-trigo-package)
 
-(define (sine x)
-  (apply-generic 'sine x))
-(define (cosine x)
-  (apply-generic 'cosine x))
 
   ;; TODO : TRIGO PACKAGE
 
@@ -354,7 +332,7 @@
   (define (=zero? x)
     (<= (magnitude x) 0.0001))
 
-  (define (negate x)
+  (define (negate-complex x)
     (if (equal? (type-tag x) 'rectangular)
         (tag (make-from-real-imag (negate (real-part x))
                                   (negate (imag-part x))))
@@ -382,21 +360,8 @@
        (lambda (r a) (tag (make-from-mag-ang r a))))
   (put 'equ? '(complex complex) equ?)
   (put '=zero? '(complex) =zero?)
+  (put 'negate '(complex) negate-complex)
   'SUCCESS---COMPLEX-PACKAGE)
-
-; Constructor for (tagged) complex numbers
-(define (make-complex-from-real-imag x y)
-  ((get 'make-from-real-imag 'complex) x y))
-(define (make-complex-from-mag-ang r a)
-  ((get 'make-from-mag-ang 'complex) r a))
-
-;; Install packages
-(install-rational-package)
-(install-complex-package)
-
-;; Equality procedure
-(define (equ? x y)
-  (apply-generic 'equ? x y))
 
 ;;************************ COERCION ************************;;
 
@@ -419,7 +384,9 @@
   (define (int->rat int)
     (make-rational (contents int) 1))
   (define (rat->real rat)
-    (attach-tag 'real (* (/ (numer (contents rat)) (denom (contents rat))) 1.0)))
+    (if (=zero? rat)
+        (attach-tag 'real 0.0)
+        (attach-tag 'real (* (/ (numer (contents rat)) (denom (contents rat))) 1.0))))
   (define (real->complex real)
     (make-complex-from-real-imag (contents real) 0))
   
@@ -428,7 +395,7 @@
   (put-coercion 'real 'complex real->complex)
   'SUCCESS---RAISE-PACKAGE)
 
-(install-coercion-package-raise)
+
 
 ;;************************ INSTALL RAISE PROCEDURES INTO RELEVANT ARITHMETIC INDICES ************************;;
 (define (install-raise-package)
@@ -461,8 +428,6 @@
   (put-coercion 'rat 'int rat->int)
   'SUCCESS---PROJECT-PACKAGE)
 
-(install-coercion-package-project)
-
 ;;************************ INSTALL PROJECT PROCEDURES INTO ARITHMETIC INDICES ************************;;
 (define (install-project-package)
   (define (complex->real complex)
@@ -477,22 +442,6 @@
   (put 'project '(rational) rat->int)
 
   'SUCCESS---INSTALLED-PROJECT-PROCEDURES)
-
-
-(install-raise-package)
-(install-project-package)
-
-;; GENERAL RAISE AND DROP PROCEDURES
-(define (raise num)
-    ((apply-generic 'raise num) num))
-
-(define (drop num)
-  (let ((lowered ((apply-generic 'project num) num)))
-    (let ((raisedBack (raise lowered)))
-      (if (equ? num raisedBack)
-          lowered
-          num))))
-
 
 ;;************************ PROCEDURES FOR SUCCESSIVE RAISING ************************;;
 
@@ -516,7 +465,7 @@
                     (if raised-lower ;; if raised lower exists
                         (apply-generic op raised-lower higherNum)  ;; then call apply-generic with two arguments of the same type
                         (error
-                         ("No method for these types -- APPLY-GENERIC"
+                         (list op type-tags
                           (list op type-tags))))
                     (error
                      (list op type-tags
@@ -534,9 +483,6 @@
       (if shortened
           (iter num shortened)
           #f))))
-
-(define (negate x)
-  (apply-generic 'negate x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -565,12 +511,8 @@
   (define (tag x) (attach-tag 'sparse x))
 
   ;; shared procedures
-  (define (=zero? x)
-    (if (pair? x)
-         #f
-         (= x 0)))
-  (define (coeff term) (cadr term))
-  (define (order term) (car term))
+  (define (coeff term) ((get 'coeff '(term)) term))
+  (define (order term) ((get 'order '(term)) term))
   (define (make-term order coeff)
     ((get 'make-term 'term) order coeff))
   ;; end of shared procedures
@@ -606,8 +548,8 @@
   (define (rest-terms term-list) (tag (cdr term-list)))
   (define (make-term order coeff)
     ((get 'make-term 'term) order coeff))
-  (define (order term) (car term))
-  (define (coeff term) (cadr term)) 
+  (define (order term) ((get 'order '(term)) term))
+  (define (coeff term) ((get 'coeff '(term)) term))
   ;; end of shared procedures
 
   ;; procedures that work on sparse termlists
@@ -623,6 +565,7 @@
     (let ((exponent (order term)))
       (define (iter currExp result)
         (cond
+          ((=zero? (coeff term)) (tag term-list))
           ((= currExp exponent) (tag (cons (coeff term) (cdr (rest-terms result)))))
           ((< currExp exponent) (iter (+ currExp 1) (cons 0 result)))
           (else
@@ -636,10 +579,6 @@
   (put 'empty-termlist? '(dense) empty-termlist?)
   
   'SUCCESS---POLYNOMIAL-DENSE-TERMLIST-PACKAGE)
-
-(install-poly-term-package)
-(install-poly-sparse-termlist-package)
-(install-poly-dense-termlist-package)
 
  ;;;;;;;;;;;;;;;;;;;;;;;;;;; GENERIC POLYNOMIAL PACKAGE ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -757,7 +696,7 @@
 
   (define (sub-poly p1 p2)
     (if (same-variable? (variable p1) (variable p2))
-        (add-poly p1 (negate p2))
+        (add-poly p1 (negate-poly p2))
         (error "Polys not in same var: MUL-POLY" (list p1 p2))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;; DIV POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -804,39 +743,194 @@
       (lambda (p1 p2) (tag (sub-poly p1 p2))))
   (put 'div '(polynomial polynomial)
        (lambda (p1 p2) (tag (div-poly p1 p2))))
-  (put '=zero? 'polynomial =zero?)
+  (put '=zero? '(polynomial) =zero?)
   
   (put 'make 'polynomial
        (lambda (var terms) (tag (make-poly var terms))))
   'SUCCESS---POLYNOMIAL-PACKAGE)
 
+;;************************ GENERIC PROCEDURES ************************;;
+;; ARITHMETIC
+(define (add x y) (apply-generic 'add x y))
+(define (sub x y) (apply-generic 'sub x y))
+(define (mul x y) (apply-generic 'mul x y))
+(define (div x y) (apply-generic 'div x y))
+
+;; COMPLEX
+(define (real-part z) (apply-generic 'real-part z))
+(define (imag-part z) (apply-generic 'imag-part z))
+(define (magnitude z) (apply-generic 'magnitude z))
+(define (angle z) (apply-generic 'angle z))
+
+;; TRIGO
+(define (sine x)
+  (apply-generic 'sine x))
+(define (cosine x)
+  (apply-generic 'cosine x))
+
+;; EQUALITY
+(define (equ? x y)
+  (apply-generic 'equ? x y))
+
+;; COERCION
+(define (raise num)
+    ((apply-generic 'raise num) num))
+
+(define (drop num)
+  (let ((lowered ((apply-generic 'project num) num)))
+    (let ((raisedBack (raise lowered)))
+      (if (equ? num raisedBack)
+          lowered
+          num))))
+
+;; NEGATION
+(define (negate x)
+  (apply-generic 'negate x))
+
+;; CHECK IF ZERO
+(define (=zero? x)
+  (apply-generic '=zero? x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; INSTALL PACKAGES ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Complex
+(install-rectangular-package)
+(install-polar-package)
+
+; Numbers
+(install-integer-package)
+(install-real-package)
+(install-trigo-package)
+(install-rational-package)
+(install-complex-package)
+
+; Coercion
+(install-coercion-package-raise)
+(install-coercion-package-project)
+(install-raise-package)
+(install-project-package)
+
+; Polynomial
+(install-poly-term-package)
+(install-poly-sparse-termlist-package)
+(install-poly-dense-termlist-package)
 (install-polynomial-package)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; CONSTRUCTORS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Rational
+(define (make-rational n d)
+  ((get 'make 'rational) n d))
+
+; Complex
+(define (make-complex-from-real-imag x y)
+  ((get 'make-from-real-imag 'complex) x y))
+(define (make-complex-from-mag-ang r a)
+  ((get 'make-from-mag-ang 'complex) r a))
+
+; Polynomial
 (define (make-polynomial var terms)
   ((get 'make 'polynomial) var terms))
 (define (make-term order coeff)
   ((get 'make-term 'term) order coeff))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::::::;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TEST ;;
+;; Sparse and dense termlist are able to 'interact' with each other too.
+;; Coefficients of different types work (except for polynomial as coercion for poly hasn't been applied yet)
 
 (define a-p (make-polynomial 'x (list 'sparse (make-term 3 4) (make-term 2 7) (make-term 1 5))))
 (define b-p (make-polynomial 'x (list 'sparse (make-term 3 2) (make-term 2 4))))
-(define c-p (make-polynomial 'x (list 'dense 3 2 4 0 0 1 2 4)))
-(define d-p (make-polynomial 'x (list 'dense 0 0 2 4 12 9)))
+(define c-p (make-polynomial 'x (list 'dense 4 7 5 0)))
+(define d-p (make-polynomial 'x (list 'dense 2 4 0 0)))
 
 (define e-p (make-polynomial 'x (list 'sparse
+                                      (make-term 4 2)
                                       (make-term 3 (make-rational 4 5))
                                       (make-term 2 (make-complex-from-real-imag 1 2))
-                                      (make-term 4 2))))
-
-;; TEST
+                                      )))
+(define j-p (make-polynomial 'x (list 'dense
+                                      2
+                                      (make-rational 4 5)
+                                      (make-complex-from-real-imag 1 2)
+                                      0
+                                      0)))
 
 (define f-p (make-polynomial 'x (list 'sparse (make-term 5 1) (make-term 0 -1))))
 (define g-p (make-polynomial 'x (list 'sparse (make-term 2 1) (make-term 0 -1))))
+
+(define h-p (make-polynomial 'x (list 'dense 1 0 0 0 0 -1)))
+(define i-p (make-polynomial 'x (list 'dense 1 0 -1)))
+
+(display "**************")
+(newline)
+
+'ADDITION
+(add a-p b-p)
+(add c-p d-p)
+(add a-p e-p)
+(add c-p j-p)
+(add a-p c-p) ;; add sparse dense
+(newline)
+
+'SUBSTRACTION
+(sub a-p b-p)
+(sub c-p d-p)
+(sub b-p e-p)
+(sub d-p j-p)
+(sub a-p c-p) ;; sub sparse dense
+(newline)
+
+'MULTIPLICATION
+(mul a-p b-p)
+(mul c-p d-p)
+(mul a-p e-p)
+(mul c-p j-p)
+(mul a-p c-p) ;; mul sparse dense
+(newline)
+
+'DIVISION
 (div f-p g-p)
+(div h-p i-p)
+(div f-p i-p) ;; div sparse dense
+(newline)
 
 ;; OUTPUT
+
+;'ADDITION
+;'(polynomial x sparse (term 3 6) (term 2 11) (term 1 5))
+;'(polynomial x dense 6 11 5 0)
+;'(polynomial x sparse (term 4 2) (term 3 (rational 24 . 5)) (term 2 (complex rectangular 8.0 . 2)) (term 1 5))
+;'(polynomial x dense 2 (rational 24 . 5) (complex rectangular 8.0 . 2) 5 0)
+;'(polynomial x dense 8 14 10 0)
+
+;'SUBSTRACTION
+;'(polynomial x sparse (term 3 2) (term 2 3) (term 1 5))
+;'(polynomial x dense 2 3 5 0)
+;'(polynomial x sparse (term 4 -2) (term 3 (rational 6 . 5)) (term 2 (complex rectangular 3.0 . -2)))
+;'(polynomial x dense -2 (rational 6 . 5) (complex rectangular 3.0 . -2) 0 0)
+;'(polynomial x dense 0)
+
+;'MULTIPLICATION
+;'(polynomial x sparse (term 6 8) (term 5 30) (term 4 38) (term 3 20))
+;'(polynomial x dense 8 30 38 20 0 0 0)
+;'(polynomial
+;  x
+;  sparse
+;  (term 7 8)
+;  (term 6 (rational 86 . 5))
+;  (term 5 (complex rectangular 19.6 . 8.0))
+;  (term 4 (complex rectangular 11.000000000000002 . 14.0))
+;  (term 3 (complex polar 11.180339887498949 . 1.1071487177940904)))
+;'(polynomial x dense 8 (rational 86 . 5) (complex rectangular 19.6 . 8.0) (complex rectangular 11.000000000000002 . 14.0) (complex rectangular 5.000000000000002 . 10.0) 0 0 0)
+;'(polynomial x dense 16 56 89 70 25 0 0)
+
+
+;'DIVISION
 ;'(polynomial (sparse (term 3 1) (term 1 1) ()) (sparse (term 1 1) (term 0 -1)))
+;'(polynomial (dense 1 0 1 ()) (dense 1 -1))
+;'(polynomial (dense 1 0 1 ()) (dense 1 -1))
 
 
                                      
