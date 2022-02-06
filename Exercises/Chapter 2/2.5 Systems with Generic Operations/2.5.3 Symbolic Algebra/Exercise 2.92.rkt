@@ -480,6 +480,8 @@
          #f
          (= x 0)))
 
+  (define (tag p) (attach-tag 'polynomial p))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;; TERMLIST SELECTORS AND CONSTRUCTORS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (adjoin-term term termlist)
@@ -544,7 +546,7 @@
         (make-poly (variable p1)
                    (add-terms (term-list p1)
                               (term-list p2)))
-        (error "Polys not in same var: ADD-POLY" (list p1 p2))))
+        (add-poly p1 (order-poly (tag p1) (tag p2)))))
 
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;; MUL POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -568,7 +570,7 @@
     (if (same-variable? (variable p1) (variable p2))
         (make-poly (variable p1)
                    (mul-terms (term-list p1) (term-list p2)))
-         (error "Polys not in same var: MUL-POLY" (list p1 p2))))
+        (mul-poly p1 (order-poly (tag p1) (tag p2)))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;; SUB POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
                
@@ -578,7 +580,7 @@
   (define (sub-poly p1 p2)
     (if (same-variable? (variable p1) (variable p2))
         (add-poly p1 (negate-poly p2))
-        (error "Polys not in same var: MUL-POLY" (list p1 p2))))
+        (sub-poly p1 (order-poly (tag p1) (tag p2)))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;; DIV POLY ;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
@@ -607,15 +609,11 @@
          (term-list p2))
         (error "different variables")
         ))
-        
-                                
+                                       
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   ;; interface to rest of the system
-  (define (tag p) (attach-tag 'polynomial p))
-  (put 'negate '(polynomial) negate-poly)
-  ;(put 'negate '(sparse) negate-terms)
-  ;(put 'negate '(dense) negate-terms)
+  (put 'negate '(polynomial) (lambda (p) (tag (negate-poly p))))
   (put 'add '(polynomial polynomial)
        (lambda (p1 p2) (tag (add-poly p1 p2))))
   (put 'mul '(polynomial polynomial)  
@@ -628,8 +626,24 @@
   
   (put 'make 'polynomial
        (lambda (var terms) (tag (make-poly var terms))))
+  (put 'variable 'polynomial variable)
+  (put 'term-list '(polynomial) term-list)
   'SUCCESS---POLYNOMIAL-PACKAGE)
 
+;;************************ ORDERING OF POLY VARIABLES ************************;;
+(define (install-poly-ordering-package)
+  (define (tag p) (attach-tag 'polynomial p))
+  (define (make-term order coeff)
+    ((get 'make-term 'term) order coeff))
+  (define (p2->p1 p1 p2)
+    (list
+     (variable p1)
+     'sparse
+      (make-term 0 (tag p2))))
+
+  (put 'order-poly '(polynomial polynomial) p2->p1)
+  'SUCCESS---POLYNOMIAL-ORDERING-PACKAGE)
+           
 ;;************************ COERCION ************************;;
 
 ; complex -> polynomial
@@ -827,6 +841,10 @@
 (define (=zero? x)
   (apply-generic '=zero? x))
 
+;; ORDER POLYNOMIALS
+(define (order-poly p1 p2)
+  (apply-generic 'order-poly p1 p2))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; INSTALL PACKAGES ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Complex
 (install-rectangular-package)
@@ -852,9 +870,10 @@
 (install-poly-sparse-termlist-package)
 (install-poly-dense-termlist-package)
 (install-polynomial-package)
+(install-poly-ordering-package)
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;; CONSTRUCTORS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;; CONSTRUCTORS AND SELECTORS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Rational
 (define (make-rational n d)
@@ -871,12 +890,18 @@
   ((get 'make 'polynomial) var terms))
 (define (make-term order coeff)
   ((get 'make-term 'term) order coeff))
+(define (variable poly)
+  ((get 'variable 'polynomial) poly))
+(define (term-list poly)
+  ((get 'term-list 'polynomial) poly))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::::::;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TEST ;;
 ;; Sparse and dense termlist are able to 'interact' with each other too.
 ;; Coefficients of different types work including poly and numbers
+;; Polynomials with different variables work for addition, subtraction and multiplication
 
 (define a-p (make-polynomial 'x (list 'sparse (make-term 3 4) (make-term 2 7) (make-term 1 5))))
 (define b-p (make-polynomial 'x (list 'sparse (make-term 3 2) (make-term 2 4))))
@@ -901,95 +926,92 @@
 (define h-p (make-polynomial 'x (list 'dense 1 0 0 0 0 -1)))
 (define i-p (make-polynomial 'x (list 'dense 1 0 -1)))
 
+(define p-in-p-a (make-polynomial 'x (list 'dense
+                                                 (make-polynomial 'x (list 'dense 1 2 3))
+                                                 4
+                                                 2)))
+(define p-in-p-b (make-polynomial 'x (list 'sparse
+                                                 (make-term 2 (make-polynomial 'x (list 'dense 23 4 5)))
+                                                 (make-term 1 3))))
+                                       
+(define y-a (make-polynomial 'y (list 'dense 1 2 3)))
+(define y-b (make-polynomial 'y (list 'sparse (make-term 3 2) (make-term 2 4))))
+
 (display "**************")
 (newline)
 
-'ADDITION
-(add a-p b-p)
-(add c-p d-p)
-(add a-p e-p)
-(add c-p j-p)
-(add a-p c-p) ;; add sparse dense
-(add 30 a-p) ;; numbers and poly
-(add (make-rational 23 4) b-p)
-;(add (make-complex-from-real-imag 2 3) c-p) ;; TODO fix this - '(add (rectangular integer)
-;(add (make-complex-from-mag-ang 1 2) d-p)
+'POLY-IN-POLY
+(add p-in-p-a p-in-p-b) 
+(mul p-in-p-a p-in-p-b)
+(sub p-in-p-a p-in-p-b)
+
+(display "**************")
 (newline)
 
-'SUBSTRACTION
-(sub a-p b-p)
-(sub c-p d-p)
-(sub b-p e-p)
-(sub d-p j-p)
-(sub a-p c-p) ;; sub sparse dense
-(sub a-p c-p) ;; add sparse dense
-(sub 30 a-p) ;; numbers and poly
-(sub (make-rational 23 4) b-p)
-;(sub (make-complex-from-real-imag 2 3) c-p) ;; TODO fix this - '(add (rectangular integer)
-;(sub (make-complex-from-mag-ang 1 2) d-p)
+'ADDITION-MULTI-VARIABLE
+(add a-p y-a)
+(add y-a a-p)
+(add b-p y-b)
+(add b-p y-a)
+(add y-b b-p)
+
+(display "**************")
 (newline)
 
-'MULTIPLICATION
-(mul a-p b-p)
-(mul c-p d-p)
-(mul a-p e-p)
-(mul c-p j-p)
-(mul a-p c-p) ;; mul sparse dense
-(mul 30 a-p) ;; numbers and poly
-;;(mul (make-rational 23 4) b-p) ;; TODO fix this -  given: '(mul (23 integer) (mul (23 integer)))
-;(mul (make-complex-from-real-imag 2 3) c-p) ;; TODO fix this
-;(mul (make-complex-from-mag-ang 1 2) d-p)
+'MULTIPLICATION-MULTI-VARIABLE
+(mul a-p y-a)
+(mul y-a a-p)
+(mul b-p y-b)
+(mul b-p y-a)
+(mul y-b b-p)
+
+(display "**************")
 (newline)
 
-'DIVISION
-(div f-p g-p)
-(div h-p i-p)
-(div f-p i-p) ;; div sparse dense
-(div 30 a-p) ;; numbers and poly
-(div (make-rational 23 4) b-p) 
-(div (make-complex-from-real-imag 2 3) c-p) 
-(div (make-complex-from-mag-ang 1 2) d-p)
-(newline)
-
+'SUBTRACTION-MULTI-VARIABLE
+(sub a-p y-a)
+(sub y-a a-p)
+(sub b-p y-b)
+(sub b-p y-a)
+(sub y-b b-p)
 
 ;; OUTPUT
 
-;'ADDITION
-;'(polynomial x sparse (term 3 6) (term 2 11) (term 1 5))
-;'(polynomial x dense 6 11 5 0)
-;'(polynomial x sparse (term 4 2) (term 3 (rational 24 . 5)) (term 2 (complex rectangular 8.0 . 2)) (term 1 5))
-;'(polynomial x dense 2 (rational 24 . 5) (complex rectangular 8.0 . 2) 5 0)
-;'(polynomial x dense 8 14 10 0)
+;**************
+;'POLY-IN-POLY
+;'(polynomial x dense (polynomial x dense 24 6 8) 7 2)
+;'(polynomial x sparse (term 4 (polynomial x dense 23 50 82 22 15)) (term 3 (polynomial x dense 95 22 29)) (term 2 (polynomial x dense 46 8 22)) (term 1 6))
+;'(polynomial x dense (polynomial x dense -22 -2 -2) 1 2)
 
-;'SUBSTRACTION
-;'(polynomial x sparse (term 3 2) (term 2 3) (term 1 5))
-;'(polynomial x dense 2 3 5 0)
-;'(polynomial x sparse (term 4 -2) (term 3 (rational 6 . 5)) (term 2 (complex rectangular 3.0 . -2)))
-;'(polynomial x dense -2 (rational 6 . 5) (complex rectangular 3.0 . -2) 0 0)
-;'(polynomial x dense 0)
+;**************
+;'ADDITION-MULTI-VARIABLE
+;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense 1 2 3)))
+;'(polynomial y sparse (term 2 1) (term 1 2) (term 0 (polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 3))))
+;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y sparse (term 3 2) (term 2 4))))
+;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y dense 1 2 3)))
+;'(polynomial y sparse (term 3 2) (term 2 4) (term 0 (polynomial x sparse (term 3 2) (term 2 4))))
 
-;'MULTIPLICATION
-;'(polynomial x sparse (term 6 8) (term 5 30) (term 4 38) (term 3 20))
-;'(polynomial x dense 8 30 38 20 0 0 0)
+;**************
+;'MULTIPLICATION-MULTI-VARIABLE
+;'(polynomial x sparse (term 3 (polynomial y dense 4 8 12)) (term 2 (polynomial y dense 7 14 21)) (term 1 (polynomial y dense 5 10 15)))
 ;'(polynomial
-;  x
+;  y
 ;  sparse
-;  (term 7 8)
-;  (term 6 (rational 86 . 5))
-;  (term 5 (complex rectangular 19.6 . 8.0))
-;  (term 4 (complex rectangular 11.000000000000002 . 14.0))
-;  (term 3 (complex polar 11.180339887498949 . 1.1071487177940904)))
-;'(polynomial x dense 8 (rational 86 . 5) (complex rectangular 19.6 . 8.0) (complex rectangular 11.000000000000002 . 14.0) (complex rectangular 5.000000000000002 . 10.0) 0 0 0)
-;'(polynomial x dense 16 56 89 70 25 0 0)
+;  (term 2 (polynomial x sparse (term 3 4) (term 2 7) (term 1 5)))
+;  (term 1 (polynomial x sparse (term 3 8) (term 2 14) (term 1 10)))
+;  (term 0 (polynomial x sparse (term 3 12) (term 2 21) (term 1 15))))
+;'(polynomial x sparse (term 3 (polynomial y sparse (term 3 4) (term 2 8))) (term 2 (polynomial y sparse (term 3 8) (term 2 16))))
+;'(polynomial x sparse (term 3 (polynomial y dense 2 4 6)) (term 2 (polynomial y dense 4 8 12)))
+;'(polynomial y sparse (term 3 (polynomial x sparse (term 3 4) (term 2 8))) (term 2 (polynomial x sparse (term 3 8) (term 2 16))))
 
+;**************
+;'SUBTRACTION-MULTI-VARIABLE
+;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense -1 -2 -3)))
+;'(polynomial y sparse (term 2 1) (term 1 2) (term 0 (polynomial x sparse (term 3 -4) (term 2 -7) (term 1 -5) (term 0 3))))
+;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y sparse (term 3 -2) (term 2 -4))))
+;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y dense -1 -2 -3)))
+;'(polynomial y sparse (term 3 2) (term 2 4) (term 0 (polynomial x sparse (term 3 -2) (term 2 -4))))                                    
 
-;'DIVISION
-;'(polynomial (sparse (term 3 1) (term 1 1) ()) (sparse (term 1 1) (term 0 -1)))
-;'(polynomial (dense 1 0 1 ()) (dense 1 -1))
-;'(polynomial (dense 1 0 1 ()) (dense 1 -1))
-
-
-                                     
 
 
 

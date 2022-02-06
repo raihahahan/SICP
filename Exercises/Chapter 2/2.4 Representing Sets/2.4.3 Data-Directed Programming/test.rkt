@@ -11,6 +11,12 @@
         (else
          (find item (cdr list)))))
 
+(define my (list 1 2))
+(first my)
+(second my)
+
+(find 'polynomial '(integer polynomial))
+
 (define (index elem list)  ;; returns false if elem is not in list. else, returns the index of elem in list. list is indexed at 0.
   (define (iter ls result)
     (cond ((null? ls) #f)
@@ -92,5 +98,17 @@
 (second (list 1 2 3))
 
 pi
+
+(define (give condition list) ;; returns item in list, else false
+  (cond ((null? list) #f)
+        ((condition (car list)) (car list))
+        (else
+         (give condition (cdr list)))))
+
+(give (lambda (x) (not (equal? (car x) 'polynomial)))
+      (list (list 'polynomial 28) (list 'integer 20)))
+      
+        
+  
         
 ;(+ 32.41 30.83 138.93 117.18 99.55 23.24 67.91)
