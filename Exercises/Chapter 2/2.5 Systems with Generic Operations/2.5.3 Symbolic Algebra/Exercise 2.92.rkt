@@ -933,6 +933,13 @@
 (define p-in-p-b (make-polynomial 'x (list 'sparse
                                                  (make-term 2 (make-polynomial 'x (list 'dense 23 4 5)))
                                                  (make-term 1 3))))
+(define x-y-z (make-polynomial 'x (list 'sparse
+                                        (make-term 0 (make-polynomial 'y
+                                                                      (list 'dense 3)))
+                                        (make-term 0 (make-polynomial 'z
+                                                                      (list 'dense 4))))))
+
+
                                        
 (define y-a (make-polynomial 'y (list 'dense 1 2 3)))
 (define y-b (make-polynomial 'y (list 'sparse (make-term 3 2) (make-term 2 4))))
@@ -949,6 +956,7 @@
 (newline)
 
 'ADDITION-MULTI-VARIABLE
+(add a-p x-y-z)
 (add a-p y-a)
 (add y-a a-p)
 (add b-p y-b)
@@ -959,6 +967,7 @@
 (newline)
 
 'MULTIPLICATION-MULTI-VARIABLE
+(mul a-p x-y-z)
 (mul a-p y-a)
 (mul y-a a-p)
 (mul b-p y-b)
@@ -969,6 +978,7 @@
 (newline)
 
 'SUBTRACTION-MULTI-VARIABLE
+(sub a-p x-y-z)
 (sub a-p y-a)
 (sub y-a a-p)
 (sub b-p y-b)
@@ -985,6 +995,7 @@
 
 ;**************
 ;'ADDITION-MULTI-VARIABLE
+;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense 3)) (term 0 (polynomial z dense 4)))
 ;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense 1 2 3)))
 ;'(polynomial y sparse (term 2 1) (term 1 2) (term 0 (polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 3))))
 ;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y sparse (term 3 2) (term 2 4))))
@@ -993,6 +1004,15 @@
 
 ;**************
 ;'MULTIPLICATION-MULTI-VARIABLE
+;'(polynomial
+;  x
+;  sparse
+;  (term 3 (polynomial y dense 12))
+;  (term 3 (polynomial z dense 16))
+;  (term 2 (polynomial y dense 21))
+;  (term 2 (polynomial z dense 28))
+;  (term 1 (polynomial y dense 15))
+;  (term 1 (polynomial z dense 20)))
 ;'(polynomial x sparse (term 3 (polynomial y dense 4 8 12)) (term 2 (polynomial y dense 7 14 21)) (term 1 (polynomial y dense 5 10 15)))
 ;'(polynomial
 ;  y
@@ -1006,6 +1026,7 @@
 
 ;**************
 ;'SUBTRACTION-MULTI-VARIABLE
+;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense -3)) (term 0 (polynomial z dense -4)))
 ;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense -1 -2 -3)))
 ;'(polynomial y sparse (term 2 1) (term 1 2) (term 0 (polynomial x sparse (term 3 -4) (term 2 -7) (term 1 -5) (term 0 3))))
 ;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y sparse (term 3 -2) (term 2 -4))))
