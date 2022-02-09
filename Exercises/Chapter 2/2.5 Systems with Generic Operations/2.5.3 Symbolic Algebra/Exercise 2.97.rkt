@@ -41,6 +41,9 @@
         (else
          (give condition (cdr list)))))
 
+(define (remove-last ls)
+  (reverse (cdr (reverse ls))))
+
 ;; GET and PUT procedures
 (define global-array '())
 
@@ -164,6 +167,11 @@
     (= x 0))
   (define (negate x)
     (* -1 x))
+  (define (expt-int a b)
+    (expt a b))
+  (define (reduce-integers n d)
+    (let ((g (gcd n d)))
+      (list (/ n g) (/ d g))))
 
   (put 'add '(integer integer)
        (lambda (x y) (+ x y)))
@@ -175,9 +183,12 @@
        (lambda (x y) (* x y)))
   (put 'div '(integer integer)
        (lambda (x y) (/ x y)))
+  (put 'exponent '(integer integer)
+       (lambda (x y) (expt-int x y)))
   (put 'equ? '(integer integer) equ?)
   (put '=zero? '(integer) =zero?)
   (put 'negate '(integer) negate)
+  (put 'reduce '(integer integer) reduce-integers)
   'SUCCESS---INTEGER-PACKAGE)
 
 
@@ -189,6 +200,11 @@
     (= x 0))
   (define (negate x)
     (* -1 x))
+  (define (expt-real a b)
+    (expt a b))
+  (define (reduce-real n d)
+    (let ((g (gcd n d)))
+      (list (/ n g) (/ d g))))
 
   (put 'add '(real real)
        (lambda (x y) (+ x y)))
@@ -200,9 +216,13 @@
        (lambda (x y) (* x y)))
   (put 'div '(real real)
        (lambda (x y) (/ x y)))
+  (put 'exponent '(real integer)
+       (lambda (x y) (expt-real x y)))
   (put 'equ? '(real real) equ?)
   (put '=zero? '(real) =zero?)
   (put 'negate '(real) negate)
+  (put 'greatest-common-divisor '(real real) (lambda (a b) (gcd a b)))
+  (put 'reduce '(real real) reduce-real)
   'SUCCESS---REAL-PACKAGE)
 
 ;;************************ END OF ORDINARY PRIMITIVE NUMBERS ************************;;
@@ -215,28 +235,35 @@
   (define (numer x) (car x))
   (define (denom x) (cdr x))
   (define (make-rat n d)
-    (let ((g (gcd n d)))
-      (cons (/ n g) (/ d g))))
+    (cond ((=zero? n) 0)
+          ((and (not (pair? n)) (not (pair? d))) (cons (car n d) (cadr n d)))
+          (else
+           (cons (attach-tag (type-tag n) (car (contents (reduce n d)))) (cadr (contents (reduce n d)))))))
+  
+  (define (expt-rat a b)
+    (make-rat (expt (numer a) b)
+              (expt (denom a) b)))
+
   (define (add-rat x y)
-    (make-rat (+ (* (numer x) (denom y))
-                 (* (numer y) (denom x)))
-              (* (denom x) (denom y))))
+    (make-rat (add (mul (numer x) (denom y))
+                   (mul (numer y) (denom x)))
+              (mul (denom x) (denom y))))
   (define (sub-rat x y)
-    (make-rat (- (* (numer x) (denom y))
-                 (* (numer y) (denom x)))
-              (* (denom x) (denom y))))
+    (make-rat (sub (mul (numer x) (denom y))
+                   (mul (numer y) (denom x)))
+              (mul (denom x) (denom y))))
   (define (mul-rat x y)
-    (make-rat (* (numer x) (numer y))
-              (* (denom x) (denom y))))
+    (make-rat (mul (numer x) (numer y))
+              (mul (denom x) (denom y))))
   (define (div-rat x y)
-    (make-rat (* (numer x) (denom y))
-              (* (denom x) (numer y))))
+    (make-rat (mul (numer x) (denom y))
+              (mul (denom x) (numer y))))
   (define (equ? x y)
     (equal? x y))
-  (define (=zero? x)
-    (= (numer x) 0))
+  (define (=zero-rat? x)
+    (=zero? (numer x)))
   (define (negate x)
-    (tag (make-rat (* -1 (numer x))
+    (tag (make-rat (mul -1 (numer x))
                    (denom x))))
   ;; interface to rest of the system
   
@@ -248,6 +275,8 @@
        (lambda (x y) (tag (mul-rat x y))))
   (put 'div '(rational rational)
        (lambda (x y) (tag (div-rat x y))))
+  (put 'exponent '(rational integer)
+       (lambda (x y) (tag (expt-rat x y))))
 
   ;; interface rational numbers selectors and to rest of system
   (put 'numer 'rational numer)
@@ -256,7 +285,7 @@
        (lambda (n d) (tag (make-rat n d))))
   
   (put 'equ? '(rational rational) equ?)
-  (put '=zero? '(rational) =zero?)
+  (put '=zero? '(rational) =zero-rat?)
   (put 'negate '(rational) negate)
   'SUCCESS---RATIONAL-NUMBERS)
 
@@ -466,7 +495,8 @@
 (define (install-polynomial-package)
   ;;;;;;;;;;;;;;;;;;;;;;;;;;; POLYNOMIAL SELECTORS AND CONSTRUCTORS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  (define (make-poly variable term-list) (cons variable term-list))
+  (define (make-poly variable term-list)
+        (cons variable term-list))
                   
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
@@ -475,10 +505,11 @@
   (define (same-variable? v1 v2)
     (and (variable? v1) (variable? v2) (eq? v1 v2)))
   
-  (define (=zero? x)
-    (if (pair? x)
-         #f
-         (= x 0)))
+  (define (=zero-poly? x)
+    (=zero-termlist? (term-list x)))
+
+  (define (=zero-termlist? L)
+    (= (length L) 1)) ;; if List only contains type (dense or sparse)
 
   (define (tag p) (attach-tag 'polynomial p))
 
@@ -586,11 +617,11 @@
   
   (define (div-terms L1 L2)
     (if (empty-termlist? L1)
-        (list '() '())
+        (list '(sparse) '(sparse))
         (let ((t1 (first-term L1))
               (t2 (first-term L2)))
           (if (> (order t2) (order t1))
-              (list (list (type-tag L1)'()) L1)
+              (list (list (type-tag L1)) L1)
               (let ((new-c (div (coeff t1) (coeff t2)))
                     (new-o (- (order t1) (order t2))))
                 (let ((new-quotient (make-term new-o new-c)))
@@ -601,15 +632,91 @@
                     (list (adjoin-term new-quotient (first rest-of-result))
                           (second rest-of-result))
                   )))))))
-  
+
+ 
   (define (div-poly p1 p2)
     (if (same-variable? (variable p1) (variable p2))
-        (div-terms
-         (term-list p1)
-         (term-list p2))
+        (list
+         (make-poly
+          (variable p1)
+          (first (div-terms
+           (term-list p1)
+           (term-list p2))))
+         (tag (make-poly
+          (variable p1)
+          (second (div-terms
+           (term-list p1)
+           (term-list p2))))))
+         (error "different variables")
+         ))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;; GCD ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (define (remainder-terms a b)
+    (cadr (div-terms a b)))
+
+  (define (pseudoremainder-terms a b)
+    (let ((O1 (order (first-term a)))
+          (O2 (order (first-term b)))
+          (c (coeff (first-term b))))
+      (let ((int-power (+ 1 (- O1 O2))))
+        (let ((int-factor (exponent c int-power)))
+          (let ((new-dividend (mul-terms (list 'sparse (make-term 0 int-factor)) a)))
+            (cadr (div-terms new-dividend b)))))))
+
+  (define (div-by-common-factor L)
+    (define (iter largest L)
+      (cond ((empty-termlist? L) largest)
+            ((>= (coeff (first-term L)) largest)
+             (iter (coeff (first-term L)) (rest-terms L)))
+            (else
+             (iter largest (rest-terms L)))))
+    (let ((largest-coeff (iter 0 L)))
+      (div-terms L (list 'sparse (make-term 0 largest-coeff)))))
+    
+  
+  (define (gcd-terms a b)
+    (if (empty-termlist? b)
+        (div-by-common-factor a)
+        (gcd-terms b (pseudoremainder-terms a b))))
+  
+    (define (gcd-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (make-poly
+         (variable p1)
+         (gcd-terms
+          (term-list p1)
+          (term-list p2)))
         (error "different variables")
-        ))
-                                       
+         ))
+
+  (define (reduce-terms n d)
+    (let ((GCD (car (gcd-terms n d))))
+      (let ((c (coeff (first-term GCD)))
+            (O2 (order (first-term GCD)))
+            (O1 (max (order (first-term n))
+                     (order (first-term d)))))
+        (let ((factor (exponent c (+ 1 (- O1 O2)))))
+          (let ((new-n (mul-term-by-all-terms (make-term 0 factor) n))
+                (new-d (mul-term-by-all-terms (make-term 0 factor) d)))
+            (let ((nn (car (div-terms new-n GCD)))
+                  (dd (car (div-terms new-d GCD))))
+              (list nn dd)))))))
+
+  (define (reduce-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (list
+         (make-poly
+          (variable p1)
+          (first (reduce-terms
+           (term-list p1)
+           (term-list p2))))
+         (tag (make-poly
+          (variable p1)
+          (second (reduce-terms
+           (term-list p1)
+           (term-list p2))))))
+        (error "different variables")))
+         
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   ;; interface to rest of the system
@@ -622,12 +729,14 @@
       (lambda (p1 p2) (tag (sub-poly p1 p2))))
   (put 'div '(polynomial polynomial)
        (lambda (p1 p2) (tag (div-poly p1 p2))))
-  (put '=zero? '(polynomial) =zero?)
+  (put '=zero? '(polynomial) =zero-poly?)
   
   (put 'make 'polynomial
        (lambda (var terms) (tag (make-poly var terms))))
   (put 'variable 'polynomial variable)
-  (put 'term-list '(polynomial) term-list)
+  (put 'term-list 'polynomial term-list)
+  (put 'greatest-common-divisor '(polynomial polynomial) (lambda (p1 p2) (tag (gcd-poly p1 p2))))
+  (put 'reduce '(polynomial polynomial) (lambda (p1 p2) (tag (reduce-poly p1 p2))))
   'SUCCESS---POLYNOMIAL-PACKAGE)
 
 ;;************************ ORDERING OF POLY VARIABLES ************************;;
@@ -643,7 +752,9 @@
 
   (put 'order-poly '(polynomial polynomial) p2->p1)
   'SUCCESS---POLYNOMIAL-ORDERING-PACKAGE)
-           
+
+;;************************ GCD PACKAGE ************************;;
+
 ;;************************ COERCION ************************;;
 
 ; complex -> polynomial
@@ -777,7 +888,7 @@
                            (error
                             (list op type-tags
                                   (list op type-tags)))))                          
-                    (error
+                   (error
                      (list op type-tags
                       (list op type-tags)))))))))))
 
@@ -802,6 +913,7 @@
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
+(define (exponent term expt) (apply-generic 'exponent term expt))
 
 ;; COMPLEX
 (define (real-part z) (apply-generic 'real-part z))
@@ -844,6 +956,14 @@
 ;; ORDER POLYNOMIALS
 (define (order-poly p1 p2)
   (apply-generic 'order-poly p1 p2))
+
+;; GCD
+(define (greatest-common-divisor a b)
+  (if (and (number? a) (number? b))
+      (apply-generic 'greatest-common-divisor (* 1.0 a) (* 1.0 b))
+      (apply-generic 'greatest-common-divisor a b)))
+(define (reduce a b)
+  (apply-generic 'reduce a b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; INSTALL PACKAGES ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Complex
@@ -903,132 +1023,39 @@
 ;; Coefficients of different types work including poly and numbers
 ;; Polynomials with different variables work for addition, subtraction and multiplication
 
-(define a-p (make-polynomial 'x (list 'sparse (make-term 3 4) (make-term 2 7) (make-term 1 5))))
-(define b-p (make-polynomial 'x (list 'sparse (make-term 3 2) (make-term 2 4))))
-(define c-p (make-polynomial 'x (list 'dense 4 7 5 0)))
-(define d-p (make-polynomial 'x (list 'dense 2 4 0 0)))
+(define P1 (make-polynomial 'x (list 'sparse (make-term 1 1) (make-term 0 1))))
+(define P2 (make-polynomial 'x (list 'sparse (make-term 3 1) (make-term 0 -1))))
+(define P3 (make-polynomial 'x (list 'sparse (make-term 1 1))))
+(define P4 (make-polynomial 'x (list 'sparse (make-term 2 1) (make-term 0 -1))))
 
-(define e-p (make-polynomial 'x (list 'sparse
-                                      (make-term 4 2)
-                                      (make-term 3 (make-rational 4 5))
-                                      (make-term 2 (make-complex-from-real-imag 1 2))
-                                      )))
-(define j-p (make-polynomial 'x (list 'dense
-                                      2
-                                      (make-rational 4 5)
-                                      (make-complex-from-real-imag 1 2)
-                                      0
-                                      0)))
+(define q1 (make-polynomial 'x (list 'dense 1 -2 1)))
+(define q2 (make-polynomial 'x (list 'sparse (make-term 2 11) (make-term 0 7))))
+(define q3 (make-polynomial 'x (list 'sparse (make-term 2 1) (make-term 0 1))))
+(define q4 (make-polynomial 'x (list 'sparse (make-term 3 1) (make-term 0 1))))
 
-(define f-p (make-polynomial 'x (list 'sparse (make-term 5 1) (make-term 0 -1))))
-(define g-p (make-polynomial 'x (list 'sparse (make-term 2 1) (make-term 0 -1))))
+(define Q1 (mul q1 q2))
+(define Q2 (mul q1 q3))
+;(trace apply-generic)
 
-(define h-p (make-polynomial 'x (list 'dense 1 0 0 0 0 -1)))
-(define i-p (make-polynomial 'x (list 'dense 1 0 -1)))
+;(define rf4 (make-rational P1 P2))
+;(define rf2 (make-rational P3 P4))
 
-(define p-in-p-a (make-polynomial 'x (list 'dense
-                                                 (make-polynomial 'x (list 'dense 1 2 3))
-                                                 4
-                                                 2)))
-(define p-in-p-b (make-polynomial 'x (list 'sparse
-                                                 (make-term 2 (make-polynomial 'x (list 'dense 23 4 5)))
-                                                 (make-term 1 3))))
-(define x-y-z (make-polynomial 'x (list 'sparse
-                                        (make-term 0 (make-polynomial 'y
-                                                                      (list 'dense 3)))
-                                        (make-term 0 (make-polynomial 'z
-                                                                      (list 'dense 4))))))
+(define rf1 (make-rational Q1 Q2))
+(define rf2 (make-rational q1 q2))
+(define rf3 (make-rational q3 q4))
 
+(define s1 (make-polynomial 'x (list 'dense 1 2 0)))
+(define s2 (make-polynomial 'x (list 'dense 1 0 0 -1)))
+(define s3 (make-polynomial 'x (list 'dense 1 0)))
+(define s4 (make-polynomial 'x (list 'dense 1 0 -1)))
+(define s5 (make-polynomial 'x (list 'dense 1 0)))
 
-                                       
-(define y-a (make-polynomial 'y (list 'dense 1 2 3)))
-(define y-b (make-polynomial 'y (list 'sparse (make-term 3 2) (make-term 2 4))))
+;(define t1 (make-rational s1 s2))
+;(define t2 (make-rational s3 s4))
+(add rf2 rf3)
+;(trace apply-generic)
+;(make-rational s1 s5)
 
-(display "**************")
-(newline)
-
-'POLY-IN-POLY
-(add p-in-p-a p-in-p-b) 
-(mul p-in-p-a p-in-p-b)
-(sub p-in-p-a p-in-p-b)
-
-(display "**************")
-(newline)
-
-'ADDITION-MULTI-VARIABLE
-(add a-p x-y-z)
-(add a-p y-a)
-(add y-a a-p)
-(add b-p y-b)
-(add b-p y-a)
-(add y-b b-p)
-
-(display "**************")
-(newline)
-
-'MULTIPLICATION-MULTI-VARIABLE
-(mul a-p x-y-z)
-(mul a-p y-a)
-(mul y-a a-p)
-(mul b-p y-b)
-(mul b-p y-a)
-(mul y-b b-p)
-
-(display "**************")
-(newline)
-
-'SUBTRACTION-MULTI-VARIABLE
-(sub a-p x-y-z)
-(sub a-p y-a)
-(sub y-a a-p)
-(sub b-p y-b)
-(sub b-p y-a)
-(sub y-b b-p)
-
-;; OUTPUT
-
-;**************
-;'POLY-IN-POLY
-;'(polynomial x dense (polynomial x dense 24 6 8) 7 2)
-;'(polynomial x sparse (term 4 (polynomial x dense 23 50 82 22 15)) (term 3 (polynomial x dense 95 22 29)) (term 2 (polynomial x dense 46 8 22)) (term 1 6))
-;'(polynomial x dense (polynomial x dense -22 -2 -2) 1 2)
-
-;**************
-;'ADDITION-MULTI-VARIABLE
-;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense 3)) (term 0 (polynomial z dense 4)))
-;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense 1 2 3)))
-;'(polynomial y sparse (term 2 1) (term 1 2) (term 0 (polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 3))))
-;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y sparse (term 3 2) (term 2 4))))
-;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y dense 1 2 3)))
-;'(polynomial y sparse (term 3 2) (term 2 4) (term 0 (polynomial x sparse (term 3 2) (term 2 4))))
-
-;**************
-;'MULTIPLICATION-MULTI-VARIABLE
-;'(polynomial
-;  x
-;  sparse
-;  (term 3 (polynomial y dense 12))
-;  (term 3 (polynomial z dense 16))
-;  (term 2 (polynomial y dense 21))
-;  (term 2 (polynomial z dense 28))
-;  (term 1 (polynomial y dense 15))
-;  (term 1 (polynomial z dense 20)))
-;'(polynomial x sparse (term 3 (polynomial y dense 4 8 12)) (term 2 (polynomial y dense 7 14 21)) (term 1 (polynomial y dense 5 10 15)))
-;'(polynomial
-;  y
-;  sparse
-;  (term 2 (polynomial x sparse (term 3 4) (term 2 7) (term 1 5)))
-;  (term 1 (polynomial x sparse (term 3 8) (term 2 14) (term 1 10)))
-;  (term 0 (polynomial x sparse (term 3 12) (term 2 21) (term 1 15))))
-;'(polynomial x sparse (term 3 (polynomial y sparse (term 3 4) (term 2 8))) (term 2 (polynomial y sparse (term 3 8) (term 2 16))))
-;'(polynomial x sparse (term 3 (polynomial y dense 2 4 6)) (term 2 (polynomial y dense 4 8 12)))
-;'(polynomial y sparse (term 3 (polynomial x sparse (term 3 4) (term 2 8))) (term 2 (polynomial x sparse (term 3 8) (term 2 16))))
-
-;**************
-;'SUBTRACTION-MULTI-VARIABLE
-;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense -3)) (term 0 (polynomial z dense -4)))
-;'(polynomial x sparse (term 3 4) (term 2 7) (term 1 5) (term 0 (polynomial y dense -1 -2 -3)))
-;'(polynomial y sparse (term 2 1) (term 1 2) (term 0 (polynomial x sparse (term 3 -4) (term 2 -7) (term 1 -5) (term 0 3))))
-;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y sparse (term 3 -2) (term 2 -4))))
-;'(polynomial x sparse (term 3 2) (term 2 4) (term 0 (polynomial y dense -1 -2 -3)))
-;'(polynomial y sparse (term 3 2) (term 2 4) (term 0 (polynomial x sparse (term 3 -2) (term 2 -4))))                                    
+;; TODO: still doesn't work properly
+;; OUTPUT 
+;'(rational (polynomial x sparse (term 5 1) (term 4 9) (term 3 1) (term 2 19) (term 1 -2) (term 0 8)) polynomial x sparse (term 5 11) (term 3 7) (term 2 11) (term 0 7))

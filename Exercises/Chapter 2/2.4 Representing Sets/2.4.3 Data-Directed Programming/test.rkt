@@ -107,8 +107,15 @@ pi
 
 (give (lambda (x) (not (equal? (car x) 'polynomial)))
       (list (list 'polynomial 28) (list 'integer 20)))
-      
-        
-  
-        
+
+(define (remove-last ls)
+  (reverse (cdr (reverse ls))))
+
+(remove-last (list 1 2 3 4))
+(define new (list 'a 'b))
+
+(cdr new)
+(cadr new)
+(expt 2 3)
+(max 1 2)
 ;(+ 32.41 30.83 138.93 117.18 99.55 23.24 67.91)
