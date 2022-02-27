@@ -1,23 +1,14 @@
 #lang racket
-(define (find-keyval list key val)
-  (cond ((null? list) #f)
-        ((and (eq? (car (car list)) key)
-              (eq? (cdr (car list)) val))
-         #t)
-        (else
-         (find-keyval (cdr list) key val))))
+(define square
+  (lambda (x) (* x x)))
 
-(define a (list
- (cons 'a 'b)
- (cons 'c 'd)
- (cons 'a 'f)))
+(define sum-of-squares
+  (lambda (x y) (+ (square x) (square y))))
 
-(find-keyval a 'a 'b)
-(find-keyval a 'c 'd)
-(find-keyval a 'f 'g)
+(define f
+  (lambda (a) (sum-of-squares (+ a 1) (* a 2))))
 
-(set! b 20)
-
-
+(f 5)
+(print 'ask)
          
              

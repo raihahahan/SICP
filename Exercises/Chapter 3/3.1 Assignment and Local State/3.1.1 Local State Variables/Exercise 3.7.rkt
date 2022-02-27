@@ -48,6 +48,8 @@
                 m))))
     dispatch)
 
+;; TEST
+
 (define paul (make-account 100 'paul))
 ((paul 'paul 'withdraw) 10) ; 90
 ((paul 'pasul 'withdraw) 10) ; "Incorrect password"
@@ -59,5 +61,5 @@
 ((paul 'paul 'deposit) 200) ; 280
 ((pete 'new-pete 'deposit) 0) ; 280
 ((paul 'paul 'deposit) 0) ; 280
-        
-   
+
+      
