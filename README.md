@@ -21,8 +21,8 @@ For clearer answers, do visit the last two links I've provided under the Acknowl
 
 * Clone the repo
    ```sh
-   git clone https://github.com/raihahahan/singapore-places-names.git
-   cd singapore-places-names
+   git clone https://github.com/raihahahan/SICP.git
+   cd SICP
    
  * Install Racket from [https://racket-lang.org/](https://racket-lang.org/).
 
