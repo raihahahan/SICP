@@ -17,11 +17,14 @@ For clearer answers, do visit the last two links I've provided under the Acknowl
 
 ## Getting Started
 
-MIT/GNU Scheme is what I use to compile my code.
-
 ### Installing
 
-* To run any of the files, download MIT/GNU Scheme https://www.gnu.org/software/mit-scheme/.
+* Clone the repo
+   ```sh
+   git clone https://github.com/raihahahan/singapore-places-names.git
+   cd singapore-places-names
+   
+ * Install Racket from [https://racket-lang.org/](https://racket-lang.org/).
 
 
 ## License
